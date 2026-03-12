@@ -602,7 +602,6 @@ let activeExercises = [];   // live list for session — supports add/remove
 let periodOn        = null;  // true/false/null for current session
 let cardioEntries   = [];   // [{id, ...}]
 let cardioCounter   = 0;
-let volumeWeeks    = 8;
 
 // ─────────────────────────────────────────────────────────────
 // EXPOSE GLOBALS  (called from inline HTML handlers)
@@ -614,8 +613,14 @@ window.setHistUser             = setHistUser;
 window.setChartUser            = setChartUser;
 window.setPRUser               = setPRUser;
 window.saveWorkout             = saveWorkout;
-window.setVolumeRange          = setVolumeRange;
 window.renderProgressionChart  = renderProgressionChart;
+window.onProgMuscleChange      = onProgMuscleChange;
+window.setProgRange            = setProgRange;
+window.setConsRange            = setConsRange;
+window.setBikeRange            = setBikeRange;
+window.setWalkRange            = setWalkRange;
+window.setPRMuscle             = setPRMuscle;
+window.renderPRs               = renderPRs;
 window.toggleEx                = toggleEx;
 window.rebuildSetRows          = rebuildSetRows;
 window.toggleSetDone           = toggleSetDone;
