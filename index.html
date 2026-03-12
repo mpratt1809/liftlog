@@ -1133,12 +1133,14 @@ async function loadHistory(user) {
   const list = document.getElementById("history-list");
   list.innerHTML = `<div class="loading"><div class="spinner"></div> Loading…</div>`;
   try {
-    const snap = await getDocs(query(collection(db,"workouts"), where("user","==",user), orderBy("timestamp","desc")));
+    const snap = await getDocs(query(collection(db,"workouts"), where("user","==",user)));
     allSessions = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Sort client-side by date string descending (avoids composite index requirement)
+    allSessions.sort((a,b) => (b.date||"").localeCompare(a.date||""));
     renderHistory(allSessions);
     updateHistStats(allSessions);
   } catch(e) {
-    list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>Check Firebase config</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
   }
 }
 
@@ -1203,8 +1205,10 @@ function setHistUser(user) {
 // ─────────────────────────────────────────────────────────────
 async function loadChartData(user) {
   try {
-    const snap = await getDocs(query(collection(db,"workouts"), where("user","==",user), orderBy("timestamp","asc")));
+    const snap = await getDocs(query(collection(db,"workouts"), where("user","==",user)));
     allSessions = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Sort client-side ascending by date string
+    allSessions.sort((a,b) => (a.date||"").localeCompare(b.date||""));
     populateChartExerciseSelect();
     renderProgressionChart();
     renderVolumeChart();
