@@ -110,7 +110,8 @@
     }
     .day-pill:hover { border-color: var(--accent); color: var(--text); }
     .day-pill.active { background: var(--accent); color: #0d0f14; border-color: var(--accent); font-weight: 700; }
-    .day-pill.rest { opacity: 0.4; cursor: default; }
+    .day-pill.rest { opacity: 0.5; }
+    .day-pill.rest:hover { opacity: 1; }
 
     /* ── Exercise Blocks ── */
     .exercise-block {
@@ -266,6 +267,34 @@
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state h3 { font-family: var(--font-head); font-size: 24px; letter-spacing: 2px; color: var(--text); margin-bottom: 8px; }
 
+    /* ── Period Toggle ── */
+    .period-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; }
+    .period-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+    .period-toggle-wrap { display: flex; gap: 8px; }
+    .period-btn { padding: 6px 18px; border-radius: 100px; border: 1.5px solid var(--border); background: none; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+    .period-btn.active-yes { border-color: #ff6b9d; background: rgba(255,107,157,0.15); color: #ff6b9d; }
+    .period-btn.active-no  { border-color: var(--success); background: rgba(46,213,115,0.1); color: var(--success); }
+    .period-indicator { width: 8px; height: 8px; border-radius: 50%; background: #ff6b9d; display: none; }
+    .period-indicator.show { display: inline-block; }
+
+    /* ── Exercise Search ── */
+    .ex-search-wrap { position: relative; margin-bottom: 8px; }
+    .ex-search-input { width: 100%; padding: 10px 14px 10px 36px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; transition: border-color 0.2s; }
+    .ex-search-input:focus { outline: none; border-color: var(--accent); }
+    .ex-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+    .ex-search-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; max-height: 280px; overflow-y: auto; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .ex-search-results.hidden { display: none; }
+    .ex-result-group { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .ex-result-group:last-child { border-bottom: none; }
+    .ex-result-group-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 4px 14px 2px; }
+    .ex-result-item { padding: 10px 14px; cursor: pointer; font-size: 14px; transition: background 0.15s; display: flex; align-items: center; gap: 8px; }
+    .ex-result-item:hover, .ex-result-item.focused { background: var(--surface2); }
+    .ex-result-item .ex-tag { font-size: 10px; padding: 2px 6px; border-radius: 100px; background: rgba(232,255,71,0.12); color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+    .ex-result-item .ex-tag.today { background: rgba(71,200,255,0.12); color: var(--accent2); }
+    .ex-sets-reps-row { display: flex; gap: 8px; margin-top: 8px; align-items: flex-end; flex-wrap: wrap; }
+    .ex-sets-reps-row > div { flex: 1; min-width: 100px; }
+    .ex-add-btn-row { margin-top: 8px; }
+
     /* ── Sky theme overrides ── */
     .theme-sky .btn-primary         { background: var(--sky); }
     .theme-sky .tab-btn.active      { color: var(--sky); border-bottom-color: var(--sky); }
@@ -336,6 +365,14 @@
     <div id="cardio-container"></div>
 
     <div id="save-section" style="display:none;margin-top:8px;">
+      <div class="period-row">
+        <span class="period-indicator" id="period-dot"></span>
+        <span class="period-label">🩸 On your period today?</span>
+        <div class="period-toggle-wrap">
+          <button class="period-btn" id="period-yes" onclick="setPeriod(true)">YES</button>
+          <button class="period-btn" id="period-no"  onclick="setPeriod(false)">NO</button>
+        </div>
+      </div>
       <div class="notes-field" style="margin-bottom:12px;">
         <label>Session Notes (optional)</label>
         <textarea id="session-notes" placeholder="How did it feel? Any PRs? Energy level?"></textarea>
@@ -534,6 +571,7 @@ let chartUser      = "sky";
 let prUser         = "sky";
 let allSessions    = [];
 let activeExercises = [];   // live list for session — supports add/remove
+let periodOn        = null;  // true/false/null for current session
 let cardioEntries   = [];   // [{id, ...}]
 let cardioCounter   = 0;
 let progressChart  = null;
@@ -563,6 +601,7 @@ window.toggleCardioSection     = toggleCardioSection;
 window.addCardioEntry          = addCardioEntry;
 window.removeCardioEntry       = removeCardioEntry;
 window.onActivityChange        = onActivityChange;
+window.setPeriod               = setPeriod;
 
 // ─────────────────────────────────────────────────────────────
 // USER SELECTION
@@ -601,7 +640,7 @@ function buildDayPills() {
     btn.className   = "day-pill" + (plan.rest ? " rest" : "");
     btn.textContent = plan.label;
     btn.dataset.day = day;
-    if (!plan.rest) btn.onclick = () => selectDay(day);
+    btn.onclick = () => selectDay(day);
     c.appendChild(btn);
   });
 }
@@ -628,6 +667,13 @@ function buildExercises(day) {
     return;
   }
 
+  periodOn = null;
+  const py = document.getElementById("period-yes");
+  const pn = document.getElementById("period-no");
+  const pd = document.getElementById("period-dot");
+  if(py) py.className="period-btn";
+  if(pn) pn.className="period-btn";
+  if(pd) pd.className="period-indicator";
   activeExercises = (currentUser === "sky"
     ? plan.exercises.filter(ex => ex.skyMod !== "skip")
     : plan.exercises
@@ -694,64 +740,206 @@ function buildExerciseBlock(ex, idx) {
   return wrap;
 }
 
+// ─────────────────────────────────────────────────────────────
+// FULL EXERCISE LIBRARY (grouped by muscle)
+// ─────────────────────────────────────────────────────────────
+const EXERCISE_LIBRARY = {
+  "Chest": [
+    "Bench Press","Incline Press","Decline Press","Chest Fly (cable)","Chest Fly (dumbbell)",
+    "Chest Press Machine","Push-Up","Wide Push-Up","Cable Crossover","Pec Deck Machine",
+    "Dumbbell Pullover","Low Cable Fly","Incline Dumbbell Press","Decline Dumbbell Press",
+  ],
+  "Triceps": [
+    "Seated Dip Machine","Tricep Ext — cable back pad","Individual Tricep Ext cable",
+    "Tricep Ext — rope cable","Tricep Kickbacks","Overhead Tricep Extension",
+    "Close-Grip Bench Press","Tricep Dips (bench)","Skull Crushers","Diamond Push-Up",
+    "Cable Pushdown","Tricep Machine",
+  ],
+  "Back": [
+    "Lat Pulldown — wide grip","Lat Pulldown — close grip","Lat Pulldown — medium grip",
+    "Individual Lat Pulldown each arm","Seated Mid Row (orange machine)",
+    "Seated Individual Row cable","Cable Row","Dumbbell Row","T-Bar Row",
+    "Pull-Up","Chin-Up","Face Pull — rope","Straight-Arm Pulldown","Hyperextension",
+    "Resistance Band Rear Delts",
+  ],
+  "Biceps": [
+    "DB Bicep Curls","Mini Cable Bar Bicep Curls","Zottman Curls","Bicep Curl Orange Machine",
+    "Hammer Curls","Concentration Curls","Preacher Curls","Cable Bicep Curl",
+    "Incline Dumbbell Curl","Reverse Curl","Slow Motion Bicep Curl",
+  ],
+  "Shoulders": [
+    "Shoulder Press Machine","DB Shoulder Press","Cable Delt Raise — S bar",
+    "Delt Face Pulls — rope cable","Trap Machine / DB Traps","Delt Fly Machine",
+    "DB Lateral Raises","DB Front Raises","Rear Delt Fly / rope",
+    "Individual shoulder side twist cable","Arnold Press","Upright Row",
+    "KB Shoulder Thrusters","Resistance Band Shoulders","Push Press",
+  ],
+  "Legs": [
+    "Leg Press","Leg Extension Machine","Leg Curl Machine (lying)","Outer Thigh Machine",
+    "Inner Thigh Machine","Calf Raises — ankle mobility","Individual Calf Raises each leg",
+    "Step Ups","Lunges","Barbell Squat","Romanian Deadlift","Bulgarian Split Squat",
+    "Hack Squat","Goblet Squat","Hip Thrust","Glute Kickback","Sumo Squat",
+    "Box Jump","Air Squat","Thruster Squat",
+  ],
+  "Core": [
+    "Ab Cruncher Machine","Plank","Side Plank","Russian Twist","Mountain Climbers",
+    "Leg Raise","Bicycle Crunch","Ab Rollout","Cable Crunch","Decline Sit-Up",
+    "Dumbbell Ab Twist","Flutter Kicks",
+  ],
+  "Full Body / Other": [
+    "Kettlebell Swing","Push Press","Deadlift","Power Clean","Battle Ropes",
+    "Burpee","Box Jump","Sled Push","Farmer Carry","Turkish Get-Up",
+  ],
+};
+
 function buildAddPanel() {
-  const plan        = WORKOUT_PLAN[selectedDay];
-  const activeNames = new Set(activeExercises.map(e => e.name));
-  const available   = plan.exercises.filter(e => !activeNames.has(e.name));
+  const todayNames  = new Set(WORKOUT_PLAN[selectedDay]?.exercises.map(e=>e.name)||[]);
+  const activeNames = new Set(activeExercises.map(e=>e.name));
 
   const panel = document.createElement("div");
   panel.className = "add-exercise-panel";
   panel.id = "add-ex-panel";
   panel.innerHTML = `
     <label>➕ Add Exercise</label>
-    <div class="add-ex-row">
-      <select id="add-ex-select">
-        <option value="">— pick from today's plan —</option>
-        ${available.map(e => `<option value="${e.name}">${e.name}</option>`).join("")}
-        <option value="__custom__">✏️ Type a custom exercise…</option>
-      </select>
-      <button class="btn-add-ex" onclick="addExerciseFromDropdown()">Add</button>
+    <div class="ex-search-wrap" id="ex-search-wrap">
+      <span class="ex-search-icon">🔍</span>
+      <input type="text" class="ex-search-input" id="ex-search-input"
+             placeholder="Search any exercise or type a custom one…"
+             autocomplete="off" />
+      <div class="ex-search-results hidden" id="ex-search-results"></div>
     </div>
-    <div class="custom-ex-row" id="custom-ex-row" style="display:none;">
-      <input type="text" id="custom-ex-name" placeholder="Exercise name" />
-      <select id="custom-ex-sets" style="width:110px;">
-        ${SETS_OPTIONS.map(s => `<option value="${s}" ${s===3?"selected":""}>${s} sets</option>`).join("")}
-      </select>
-      <select id="custom-ex-reps" style="width:110px;">
-        ${REPS_OPTIONS.map(r => `<option value="${r}" ${r===10?"selected":""}>${r} reps</option>`).join("")}
-      </select>
-      <button class="btn-add-ex" onclick="addCustomExercise()">Add</button>
+    <div class="ex-sets-reps-row" id="ex-sets-reps-row" style="display:none;">
+      <div>
+        <label>Sets</label>
+        <select id="new-ex-sets">
+          ${SETS_OPTIONS.map(s=>`<option value="${s}" ${s===3?"selected":""}>${s} sets</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <label>Reps</label>
+        <select id="new-ex-reps">
+          ${REPS_OPTIONS.map(r=>`<option value="${r}" ${r===10?"selected":""}>${r} reps</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="ex-add-btn-row" id="ex-add-btn-row" style="display:none;">
+      <button class="btn-add-ex" onclick="confirmAddExercise()">➕ Add to Workout</button>
     </div>`;
 
-  setTimeout(() => {
-    const sel = panel.querySelector("#add-ex-select");
-    if (sel) sel.onchange = () => {
-      panel.querySelector("#custom-ex-row").style.display = sel.value === "__custom__" ? "flex" : "none";
-    };
-  }, 0);
+  setTimeout(() => initExSearch(todayNames, activeNames), 0);
   return panel;
 }
 
-function addExerciseFromDropdown() {
-  const sel  = document.getElementById("add-ex-select");
-  const name = sel?.value;
-  if (!name || name === "__custom__") return;
-  const existing = WORKOUT_PLAN[selectedDay]?.exercises.find(e => e.name === name);
-  activeExercises.push(existing ? {...existing} : { name, sets: 3, reps: 10, skyMod: "safe" });
-  renderExerciseList();
+let pendingExName = null;
+
+function initExSearch(todayNames, activeNames) {
+  const input   = document.getElementById("ex-search-input");
+  const results = document.getElementById("ex-search-results");
+  if (!input || !results) return;
+
+  function buildLibraryList() {
+    // All exercises: today's plan first, then full library
+    const all = [];
+    // Today's plan exercises not yet active
+    (WORKOUT_PLAN[selectedDay]?.exercises||[]).forEach(e => {
+      if (!activeNames.has(e.name)) all.push({ name: e.name, group: "Today's Plan", ex: e });
+    });
+    // Full library
+    Object.entries(EXERCISE_LIBRARY).forEach(([group, names]) => {
+      names.forEach(name => {
+        if (!all.find(a=>a.name===name))
+          all.push({ name, group, ex: null });
+      });
+    });
+    return all;
+  }
+
+  function render(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) { results.classList.add("hidden"); return; }
+
+    const list = buildLibraryList();
+    const matched = list.filter(item => item.name.toLowerCase().includes(q));
+
+    // Group matched results
+    const groups = {};
+    matched.forEach(item => {
+      if (!groups[item.group]) groups[item.group] = [];
+      groups[item.group].push(item);
+    });
+
+    // Put Today's Plan first
+    const orderedGroups = ["Today's Plan", ...Object.keys(EXERCISE_LIBRARY)];
+
+    let html = "";
+    let hasAny = false;
+    orderedGroups.forEach(g => {
+      if (!groups[g]?.length) return;
+      hasAny = true;
+      html += `<div class="ex-result-group">
+        <div class="ex-result-group-label">${g}</div>
+        ${groups[g].map(item => `
+          <div class="ex-result-item" onclick="selectExercise('${item.name.replace(/'/g,"\'")}')">
+            ${item.name}
+            ${g==="Today's Plan"?'<span class="ex-tag today">TODAY</span>':""}
+          </div>`).join("")}
+      </div>`;
+    });
+
+    // Always offer "add as custom" option
+    html += `<div class="ex-result-group">
+      <div class="ex-result-item" onclick="selectExercise('${query.trim().replace(/'/g,"\'")}', true)">
+        ✏️ Add "<strong>${query.trim()}</strong>" as custom
+      </div>
+    </div>`;
+
+    results.innerHTML = html;
+    results.classList.remove("hidden");
+  }
+
+  input.addEventListener("input", () => render(input.value));
+  input.addEventListener("focus", () => { if (input.value.trim()) render(input.value); });
+  document.addEventListener("click", e => {
+    if (!document.getElementById("ex-search-wrap")?.contains(e.target)) {
+      results.classList.add("hidden");
+    }
+  });
 }
 
-function addCustomExercise() {
-  const name = document.getElementById("custom-ex-name")?.value?.trim();
-  if (!name) return showToast("Enter an exercise name first");
-  activeExercises.push({
-    name,
-    sets: parseInt(document.getElementById("custom-ex-sets")?.value || 3),
-    reps: parseInt(document.getElementById("custom-ex-reps")?.value || 10),
-    skyMod: "safe"
-  });
+window.selectExercise = function(name, isCustom=false) {
+  pendingExName = name;
+  const input = document.getElementById("ex-search-input");
+  if (input) input.value = name;
+  document.getElementById("ex-search-results")?.classList.add("hidden");
+
+  // Pre-fill sets/reps if it's a known plan exercise
+  const planEx = Object.values(WORKOUT_PLAN).flatMap(d=>d.exercises||[]).find(e=>e.name===name);
+  if (planEx) {
+    const s = document.getElementById("new-ex-sets");
+    const r = document.getElementById("new-ex-reps");
+    if (s) s.value = planEx.sets || 3;
+    if (r) r.value = planEx.reps || 10;
+  }
+
+  document.getElementById("ex-sets-reps-row").style.display = "flex";
+  document.getElementById("ex-add-btn-row").style.display   = "block";
+};
+
+window.confirmAddExercise = function() {
+  if (!pendingExName) return showToast("Search and select an exercise first");
+  const sets = parseInt(document.getElementById("new-ex-sets")?.value || 3);
+  const reps = parseInt(document.getElementById("new-ex-reps")?.value || 10);
+  const planEx = Object.values(WORKOUT_PLAN).flatMap(d=>d.exercises||[]).find(e=>e.name===pendingExName);
+  activeExercises.push(planEx
+    ? {...planEx, sets, reps}
+    : { name: pendingExName, sets, reps, skyMod: "safe" }
+  );
+  pendingExName = null;
   renderExerciseList();
-}
+};
+
+function addExerciseFromDropdown() {} // kept for compatibility
+function addCustomExercise() {}
 
 function removeExercise(idx) {
   activeExercises.splice(idx, 1);
@@ -782,6 +970,16 @@ function rebuildSetRows(idx) {
 
 function toggleSetDone(idx, s) {
   document.getElementById(`done-${idx}-${s}`)?.classList.toggle("done");
+}
+
+// ─────────────────────────────────────────────────────────────
+// PERIOD TRACKING
+// ─────────────────────────────────────────────────────────────
+function setPeriod(val) {
+  periodOn = val;
+  document.getElementById("period-yes").className = `period-btn${val===true?" active-yes":""}`;
+  document.getElementById("period-no").className  = `period-btn${val===false?" active-no":""}`;
+  document.getElementById("period-dot").className = `period-indicator${val===true?" show":""}`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -915,6 +1113,7 @@ async function saveWorkout() {
       cardio:    loggedCardio,
       notes:     sessionNotes,
       volume:    Math.round(totalVolume),
+      period:    periodOn,
       timestamp: new Date().toISOString(),
       date:      new Date().toLocaleDateString("en-CA"),
     });
@@ -960,7 +1159,7 @@ function renderHistory(sessions) {
       <div class="history-entry">
         <div>
           <div class="history-date">${d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-          <div class="history-day">${WORKOUT_PLAN[s.day]?.label||s.day} — ${s.focus||""}</div>
+          <div class="history-day">${WORKOUT_PLAN[s.day]?.label||s.day} — ${s.focus||""}${s.period===true?'<span style="color:#ff6b9d;font-size:13px;margin-left:6px;">🩸</span>':''}</div>
           <div class="history-exercises">${exNames}</div>
           ${cardioTags ? `<div style="margin-top:6px;">${cardioTags}</div>` : ""}
         </div>
