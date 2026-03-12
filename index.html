@@ -1305,7 +1305,7 @@ function applyHistFilters() {
   if (day)   parts.push(day.charAt(0).toUpperCase()+day.slice(1)+"s");
   label.textContent = parts.length ? `Showing ${filtered.length} session${filtered.length!==1?"s":""} · ${parts.join(", ")}` : "";
   renderHistory(filtered);
-  updateHistStats(filtered);
+  updateHistStats(allSessions);  // stats always reflect all-time totals
 }
 
 function clearHistFilters(reload=true) {
