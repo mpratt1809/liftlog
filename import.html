@@ -45,7 +45,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
     const app = initializeApp({
       apiKey: "AIzaSyBi-J33c5JGZTKdUN7s72XBQiqU9lgGKkY",
@@ -25805,17 +25805,23 @@
     function buildDoc(s) {
       const exercises = (s.exercises||[]).filter(e => e && typeof e === 'object' && e.name);
       const cardio    = (s.cardio||[]).filter(c => c && typeof c === 'object' && c.activity);
+      // Replace empty strings with null for Firestore safety
+      const safeCardio = cardio.map(c => ({
+        ...c,
+        duration: c.duration === '' ? null : c.duration,
+        distance: c.distance === '' ? null : c.distance,
+      }));
       return sanitize({
         user:      'sky',
         date:      s.date || '',
         day:       guessDay(s.focus),
         focus:     s.focus || 'Home Workout',
         exercises,
-        cardio,
+        cardio: safeCardio,
         notes:     typeof s.notes === 'string' ? s.notes : '',
         period:    s.period === true ? true : false,
         volume:    calcVolume(exercises),
-        timestamp: new Date((s.date||'2023-01-01') + 'T12:00:00'),
+        timestamp: Timestamp.fromDate(new Date((s.date||'2023-01-01') + 'T12:00:00')),
       });
     }
 
