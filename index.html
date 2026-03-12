@@ -396,6 +396,38 @@
       <div class="stat-card"><div class="stat-val" id="stat-volume">–</div><div class="stat-label">Total Volume</div></div>
       <div class="stat-card"><div class="stat-val" id="stat-sauna">–</div><div class="stat-label">🧖 Sauna Mins</div></div>
     </div>
+    <div class="chart-controls" style="margin-bottom:12px;gap:8px;align-items:center;">
+      <select id="hist-year-select" onchange="applyHistFilters()" style="flex:1;min-width:90px;">
+        <option value="">All Years</option>
+      </select>
+      <select id="hist-month-select" onchange="applyHistFilters()" style="flex:1;min-width:110px;">
+        <option value="">All Months</option>
+        <option value="01">January</option>
+        <option value="02">February</option>
+        <option value="03">March</option>
+        <option value="04">April</option>
+        <option value="05">May</option>
+        <option value="06">June</option>
+        <option value="07">July</option>
+        <option value="08">August</option>
+        <option value="09">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+      <select id="hist-day-select" onchange="applyHistFilters()" style="flex:1;min-width:110px;">
+        <option value="">All Days</option>
+        <option value="sunday">Sunday</option>
+        <option value="monday">Monday</option>
+        <option value="tuesday">Tuesday</option>
+        <option value="wednesday">Wednesday</option>
+        <option value="thursday">Thursday</option>
+        <option value="friday">Friday</option>
+        <option value="saturday">Saturday</option>
+      </select>
+      <button class="chart-pill" onclick="clearHistFilters()" style="white-space:nowrap;">✕ Clear</button>
+    </div>
+    <div id="hist-filter-label" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
     <div id="history-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
   </div>
 
@@ -433,9 +465,13 @@
     </div>
     <div class="card" id="bike-card">
       <div class="card-title">🚴 Miles Cycled</div>
-      <div class="section-sub" style="margin-bottom:12px;">Total miles per month</div>
+      <div class="chart-controls" style="margin-bottom:8px;">
+        <button class="chart-pill active" id="bike-grain-wk" onclick="setBikeGrain('weekly',this)">Weekly</button>
+        <button class="chart-pill"        id="bike-grain-mo" onclick="setBikeGrain('monthly',this)">Monthly</button>
+      </div>
       <div class="chart-controls">
-        <button class="chart-pill active" id="bike-pill-yr"  onclick="setBikeRange('yr',this)">This Year</button>
+        <button class="chart-pill active" id="bike-pill-8w"  onclick="setBikeRange('8w',this)">8 Weeks</button>
+        <button class="chart-pill"        id="bike-pill-yr"  onclick="setBikeRange('yr',this)">This Year</button>
         <button class="chart-pill"        id="bike-pill-lyr" onclick="setBikeRange('lyr',this)">Last Year</button>
         <button class="chart-pill"        id="bike-pill-all" onclick="setBikeRange('all',this)">All Time</button>
       </div>
@@ -443,9 +479,13 @@
     </div>
     <div class="card">
       <div class="card-title">🐕 Miles Walked</div>
-      <div class="section-sub" style="margin-bottom:12px;">Dog walk miles per week</div>
+      <div class="chart-controls" style="margin-bottom:8px;">
+        <button class="chart-pill active" id="walk-grain-wk" onclick="setWalkGrain('weekly',this)">Weekly</button>
+        <button class="chart-pill"        id="walk-grain-mo" onclick="setWalkGrain('monthly',this)">Monthly</button>
+      </div>
       <div class="chart-controls">
-        <button class="chart-pill active" id="walk-pill-yr"  onclick="setWalkRange('yr',this)">This Year</button>
+        <button class="chart-pill active" id="walk-pill-8w"  onclick="setWalkRange('8w',this)">8 Weeks</button>
+        <button class="chart-pill"        id="walk-pill-yr"  onclick="setWalkRange('yr',this)">This Year</button>
         <button class="chart-pill"        id="walk-pill-lyr" onclick="setWalkRange('lyr',this)">Last Year</button>
         <button class="chart-pill"        id="walk-pill-all" onclick="setWalkRange('all',this)">All Time</button>
       </div>
@@ -618,6 +658,10 @@ window.onProgMuscleChange      = onProgMuscleChange;
 window.setProgRange            = setProgRange;
 window.setConsRange            = setConsRange;
 window.setBikeRange            = setBikeRange;
+window.setBikeGrain            = setBikeGrain;
+window.setWalkGrain            = setWalkGrain;
+window.applyHistFilters        = applyHistFilters;
+window.clearHistFilters        = clearHistFilters;
 window.setWalkRange            = setWalkRange;
 window.setPRMuscle             = setPRMuscle;
 window.renderPRs               = renderPRs;
@@ -1167,8 +1211,8 @@ async function loadHistory(user) {
     allSessions = snap.docs.map(d => ({id:d.id,...d.data()}));
     // Sort client-side by date string descending (avoids composite index requirement)
     allSessions.sort((a,b) => (b.date||"").localeCompare(a.date||""));
-    renderHistory(allSessions);
-    updateHistStats(allSessions);
+    populateHistYears(allSessions);
+    applyHistFilters();
   } catch(e) {
     list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
   }
@@ -1233,16 +1277,57 @@ function setHistUser(user) {
   histUser = user;
   document.getElementById("hist-sky-btn").className = `user-toggle-btn ${user==="sky"?"active sky":""}`;
   document.getElementById("hist-you-btn").className = `user-toggle-btn ${user==="meagan"?"active you":""}`;
+  clearHistFilters(false);
   loadHistory(user);
 }
+function populateHistYears(sessions) {
+  const sel = document.getElementById("hist-year-select");
+  if (!sel) return;
+  const years = [...new Set(sessions.map(s => s.date ? s.date.slice(0,4) : null).filter(Boolean))].sort().reverse();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Years</option>' +
+    years.map(y => `<option value="${y}"${y===cur?" selected":""}>${y}</option>`).join("");
+}
+
+function applyHistFilters() {
+  const year  = document.getElementById("hist-year-select")?.value  || "";
+  const month = document.getElementById("hist-month-select")?.value || "";
+  const day   = document.getElementById("hist-day-select")?.value   || "";
+  let filtered = allSessions;
+  if (year)  filtered = filtered.filter(s => s.date && s.date.slice(0,4) === year);
+  if (month) filtered = filtered.filter(s => s.date && s.date.slice(5,7) === month);
+  if (day)   filtered = filtered.filter(s => s.day === day);
+  // Update label
+  const label = document.getElementById("hist-filter-label");
+  const parts = [];
+  if (year)  parts.push(year);
+  if (month) parts.push(document.querySelector(`#hist-month-select option[value="${month}"]`)?.textContent||month);
+  if (day)   parts.push(day.charAt(0).toUpperCase()+day.slice(1)+"s");
+  label.textContent = parts.length ? `Showing ${filtered.length} session${filtered.length!==1?"s":""} · ${parts.join(", ")}` : "";
+  renderHistory(filtered);
+  updateHistStats(filtered);
+}
+
+function clearHistFilters(reload=true) {
+  const yr = document.getElementById("hist-year-select");
+  const mo = document.getElementById("hist-month-select");
+  const dy = document.getElementById("hist-day-select");
+  if (yr) yr.value = "";
+  if (mo) mo.value = "";
+  if (dy) dy.value = "";
+  const label = document.getElementById("hist-filter-label");
+  if (label) label.textContent = "";
+  if (reload) { renderHistory(allSessions); updateHistStats(allSessions); }
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // CHART STATE
 // ─────────────────────────────────────────────────────────────
 let progRange  = "6m";
 let consRange  = "yr";
-let bikeRange  = "yr";
-let walkRange  = "yr";
+let bikeRange  = "8w";
+let walkRange  = "8w";
 let progressChart = null, consChart = null, bikeChart = null, walkChart = null;
 
 // Map muscle group names to EXERCISE_LIBRARY keys
@@ -1387,6 +1472,22 @@ function renderConsistencyChart() {
 // ─────────────────────────────────────────────────────────────
 // MILES CYCLED
 // ─────────────────────────────────────────────────────────────
+let bikeGrain = "weekly";
+
+function setBikeGrain(grain, btn) {
+  bikeGrain = grain;
+  document.querySelectorAll("[id^='bike-grain-']").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  // When switching to monthly, if on 8w switch to yr
+  if (grain === "monthly" && bikeRange === "8w") {
+    bikeRange = "yr";
+    document.querySelectorAll("[id^='bike-pill-']").forEach(p=>p.classList.remove("active"));
+    const yrBtn = document.getElementById("bike-pill-yr");
+    if (yrBtn) yrBtn.classList.add("active");
+  }
+  renderBikeChart();
+}
+
 function setBikeRange(range, btn) {
   bikeRange = range;
   document.querySelectorAll("[id^='bike-pill-']").forEach(p=>p.classList.remove("active"));
@@ -1396,28 +1497,41 @@ function setBikeRange(range, btn) {
 
 function renderBikeChart() {
   const bikeCard = document.getElementById("bike-card");
-  if (chartUser !== "sky") {
-    bikeCard.style.display = "none";
-    return;
-  }
+  if (chartUser !== "sky") { bikeCard.style.display = "none"; return; }
   bikeCard.style.display = "";
-  const filtered = filterByRange(allSessions, bikeRange);
-  const months = {};
-  filtered.forEach(s => {
-    const mo = s.date ? s.date.slice(0,7) : null;
-    if (!mo) return;
+
+  let sessions = allSessions;
+  if (bikeRange === "8w") {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 56);
+    const cutStr = cutoff.toLocaleDateString("en-CA");
+    sessions = sessions.filter(s => s.date >= cutStr);
+  } else {
+    sessions = filterByRange(allSessions, bikeRange);
+  }
+
+  const buckets = {};
+  sessions.forEach(s => {
+    if (!s.date) return;
+    const key = bikeGrain === "weekly" ? getWeekStr(s.date) : s.date.slice(0,7);
     (s.cardio||[]).forEach(c => {
       if (c.activity && c.activity.toLowerCase().includes("bike")) {
         const miles = parseFloat(c.distance)||0;
-        if (miles > 0) months[mo] = (months[mo]||0) + miles;
+        if (miles > 0) buckets[key] = (buckets[key]||0) + miles;
       }
     });
   });
-  const sorted = Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0]));
-  const labels = sorted.map(([m]) => {
-    const [y,mo] = m.split("-");
-    return new Date(+y, +mo-1, 1).toLocaleDateString("en-US",{month:"short",year:"2-digit"});
+
+  const sorted = Object.entries(buckets).sort((a,b)=>a[0].localeCompare(b[0]));
+  const labels = sorted.map(([k]) => {
+    if (bikeGrain === "weekly") {
+      const d = new Date(k + "T12:00:00");
+      return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    } else {
+      const [y,mo] = k.split("-");
+      return new Date(+y,+mo-1,1).toLocaleDateString("en-US",{month:"short",year:"2-digit"});
+    }
   });
+
   const ctx = document.getElementById("bikeChart").getContext("2d");
   if (bikeChart) bikeChart.destroy();
   bikeChart = new Chart(ctx, {type:"bar", data:{
@@ -1425,9 +1539,10 @@ function renderBikeChart() {
     datasets:[{label:"Miles", data:sorted.map(([,v])=>+v.toFixed(1)),
       backgroundColor:"rgba(71,200,255,0.7)", borderRadius:6}]},
     options:{responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toFixed(1)} mi`}}},
       scales:{
-        x:{ticks:{color:"#6b7592",font:{size:10}},grid:{color:"#2a3045"}},
+        x:{ticks:{color:"#6b7592",font:{size:10},maxTicksLimit:14},grid:{color:"#2a3045"}},
         y:{ticks:{color:"#6b7592",font:{size:11}},grid:{color:"#2a3045"},
            title:{display:true,text:"miles",color:"#6b7592"}}
       }}
@@ -1437,6 +1552,21 @@ function renderBikeChart() {
 // ─────────────────────────────────────────────────────────────
 // MILES WALKED
 // ─────────────────────────────────────────────────────────────
+let walkGrain = "weekly";
+
+function setWalkGrain(grain, btn) {
+  walkGrain = grain;
+  document.querySelectorAll("[id^='walk-grain-']").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  if (grain === "monthly" && walkRange === "8w") {
+    walkRange = "yr";
+    document.querySelectorAll("[id^='walk-pill-']").forEach(p=>p.classList.remove("active"));
+    const yrBtn = document.getElementById("walk-pill-yr");
+    if (yrBtn) yrBtn.classList.add("active");
+  }
+  renderWalkChart();
+}
+
 function setWalkRange(range, btn) {
   walkRange = range;
   document.querySelectorAll("[id^='walk-pill-']").forEach(p=>p.classList.remove("active"));
@@ -1452,23 +1582,38 @@ function getWeekStr(dateStr) {
 }
 
 function renderWalkChart() {
-  const filtered = filterByRange(allSessions, walkRange);
-  const weeks = {};
-  filtered.forEach(s => {
+  let sessions = allSessions;
+  if (walkRange === "8w") {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 56);
+    const cutStr = cutoff.toLocaleDateString("en-CA");
+    sessions = sessions.filter(s => s.date >= cutStr);
+  } else {
+    sessions = filterByRange(allSessions, walkRange);
+  }
+
+  const buckets = {};
+  sessions.forEach(s => {
     if (!s.date) return;
-    const wk = getWeekStr(s.date);
+    const key = walkGrain === "weekly" ? getWeekStr(s.date) : s.date.slice(0,7);
     (s.cardio||[]).forEach(c => {
       if (c.activity && c.activity.toLowerCase().includes("walk")) {
         const miles = parseFloat(c.distance)||0;
-        if (miles > 0) weeks[wk] = (weeks[wk]||0) + miles;
+        if (miles > 0) buckets[key] = (buckets[key]||0) + miles;
       }
     });
   });
-  const sorted = Object.entries(weeks).sort((a,b)=>a[0].localeCompare(b[0]));
-  const labels = sorted.map(([w]) => {
-    const d = new Date(w + "T12:00:00");
-    return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+
+  const sorted = Object.entries(buckets).sort((a,b)=>a[0].localeCompare(b[0]));
+  const labels = sorted.map(([k]) => {
+    if (walkGrain === "weekly") {
+      const d = new Date(k + "T12:00:00");
+      return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    } else {
+      const [y,mo] = k.split("-");
+      return new Date(+y,+mo-1,1).toLocaleDateString("en-US",{month:"short",year:"2-digit"});
+    }
   });
+
   const ctx = document.getElementById("walkChart").getContext("2d");
   if (walkChart) walkChart.destroy();
   const color = chartUser==="sky"?"rgba(71,200,255,0.7)":"rgba(232,255,71,0.7)";
@@ -1477,9 +1622,10 @@ function renderWalkChart() {
     datasets:[{label:"Miles walked", data:sorted.map(([,v])=>+v.toFixed(2)),
       backgroundColor:color, borderRadius:4}]},
     options:{responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toFixed(2)} mi`}}},
       scales:{
-        x:{ticks:{color:"#6b7592",font:{size:9}, maxTicksLimit:12},grid:{color:"#2a3045"}},
+        x:{ticks:{color:"#6b7592",font:{size:9},maxTicksLimit:14},grid:{color:"#2a3045"}},
         y:{ticks:{color:"#6b7592",font:{size:11}},grid:{color:"#2a3045"},
            title:{display:true,text:"miles",color:"#6b7592"}}
       }}
