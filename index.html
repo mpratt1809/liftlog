@@ -1289,6 +1289,13 @@ function populateHistYears(sessions) {
     years.map(y => `<option value="${y}"${y===cur?" selected":""}>${y}</option>`).join("");
 }
 
+const DAY_NAMES = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+
+function getDayFromDate(dateStr) {
+  if (!dateStr) return "";
+  return DAY_NAMES[new Date(dateStr + "T12:00:00").getDay()];
+}
+
 function applyHistFilters() {
   const year  = document.getElementById("hist-year-select")?.value  || "";
   const month = document.getElementById("hist-month-select")?.value || "";
@@ -1296,13 +1303,14 @@ function applyHistFilters() {
   let filtered = allSessions;
   if (year)  filtered = filtered.filter(s => s.date && s.date.slice(0,4) === year);
   if (month) filtered = filtered.filter(s => s.date && s.date.slice(5,7) === month);
-  if (day)   filtered = filtered.filter(s => s.day === day);
+  // Derive day from date string — reliable for all sessions regardless of stored day field
+  if (day)   filtered = filtered.filter(s => getDayFromDate(s.date) === day.toLowerCase());
   // Update label
   const label = document.getElementById("hist-filter-label");
   const parts = [];
   if (year)  parts.push(year);
   if (month) parts.push(document.querySelector(`#hist-month-select option[value="${month}"]`)?.textContent||month);
-  if (day)   parts.push(day.charAt(0).toUpperCase()+day.slice(1)+"s");
+  if (day)   parts.push(day.charAt(0).toUpperCase()+day.slice(1).toLowerCase()+"s");
   label.textContent = parts.length ? `Showing ${filtered.length} session${filtered.length!==1?"s":""} · ${parts.join(", ")}` : "";
   renderHistory(filtered);
   updateHistStats(allSessions);  // stats always reflect all-time totals
