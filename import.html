@@ -6,7 +6,7 @@
   <title>LiftLog — Sky Historical Import</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0d0f14; color: #f0f2f8; font-family: 'DM Sans', system-ui, sans-serif; padding: 24px; min-height: 100vh; }
+    body { background: #0d0f14; color: #f0f2f8; font-family: system-ui, sans-serif; padding: 24px; min-height: 100vh; }
     h1 { font-size: 28px; margin-bottom: 8px; color: #47c8ff; }
     p  { color: #6b7592; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
     .card { background: #161a22; border: 1px solid #2a3045; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
@@ -18,68 +18,44 @@
     .log .err { color: #ff4757; }
     .log .info{ color: #47c8ff; }
     button { padding: 12px 28px; background: #47c8ff; color: #0d0f14; border: none; border-radius: 8px;
-             font-weight: 700; font-size: 15px; cursor: pointer; transition: opacity 0.2s; }
-    button:hover { opacity: 0.85; }
+             font-weight: 700; font-size: 15px; cursor: pointer; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
     .stat { font-size: 24px; font-weight: 700; color: #e8ff47; }
     .stat-label { font-size: 12px; color: #6b7592; margin-top: 2px; }
     .stats-row { display: flex; gap: 24px; margin-bottom: 16px; }
     #done-msg { display: none; padding: 20px; background: rgba(46,213,115,0.1); border: 1px solid #2ed573;
                 border-radius: 10px; color: #2ed573; font-weight: 600; font-size: 15px; margin-top: 16px; }
-    #warn-msg  { display: none; padding: 16px; background: rgba(255,71,87,0.1); border: 1px solid #ff4757;
-                 border-radius: 10px; color: #ff4757; font-size: 13px; margin-bottom: 16px; }
   </style>
 </head>
 <body>
   <h1>🏋️ LiftLog — Sky Historical Import</h1>
-  <p>This tool imports all of Sky's historical workout data (Nov 2023 – Jun 2025) into Firebase.<br>
-     <strong>Run this ONCE only.</strong> Click the button and wait for it to finish.</p>
-
-  <div id="warn-msg">⚠️ This page must be opened from <strong>mpratt1809.github.io/liftlog</strong> or localhost for Firebase to accept writes. Opening as a local file may cause permission errors.</div>
-
+  <p>Imports all of Sky's historical workout data (Nov 2023 – Jun 2025) into Firebase.<br>
+     <strong>Run this ONCE only.</strong> Click the button and wait for completion.</p>
   <div class="card">
     <div class="stats-row">
-      <div>
-        <div class="stat" id="stat-total">424</div>
-        <div class="stat-label">Total Sessions</div>
-      </div>
-      <div>
-        <div class="stat" id="stat-done">0</div>
-        <div class="stat-label">Imported</div>
-      </div>
-      <div>
-        <div class="stat" id="stat-err">0</div>
-        <div class="stat-label">Errors</div>
-      </div>
+      <div><div class="stat" id="stat-total">424</div><div class="stat-label">Total Sessions</div></div>
+      <div><div class="stat" id="stat-done">0</div><div class="stat-label">Imported</div></div>
+      <div><div class="stat" id="stat-err">0</div><div class="stat-label">Errors</div></div>
     </div>
     <div class="progress"><div class="progress-bar" id="prog"></div></div>
     <button id="start-btn" onclick="startImport()">🚀 Start Import</button>
     <div class="log" id="log"></div>
   </div>
-
-  <div id="done-msg">✅ Import complete! All sessions are now in Firebase. You can close this page and open LiftLog.</div>
+  <div id="done-msg">✅ Import complete! Open LiftLog to see your full history.</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-    const firebaseConfig = {
+    const app = initializeApp({
       apiKey: "AIzaSyBi-J33c5JGZTKdUN7s72XBQiqU9lgGKkY",
       authDomain: "liftlog-61d92.firebaseapp.com",
       projectId: "liftlog-61d92",
       storageBucket: "liftlog-61d92.firebasestorage.app",
       messagingSenderId: "616029390905",
       appId: "1:616029390905:web:e066e9332c0678c3bce5e8"
-    };
-
-    const app  = initializeApp(firebaseConfig);
-    const db   = getFirestore(app);
-
-    // Check if running from a trusted origin
-    const origin = window.location.hostname;
-    if (origin !== "mpratt1809.github.io" && origin !== "localhost" && origin !== "127.0.0.1" && origin !== "") {
-      document.getElementById("warn-msg").style.display = "block";
-    }
+    });
+    const db = getFirestore(app);
 
     const SESSIONS = [
   {
@@ -1659,12 +1635,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -1672,6 +1642,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "5.6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -1720,12 +1696,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -1733,6 +1703,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "5.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.5",
         "unit": "miles"
       }
     ],
@@ -1978,12 +1954,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.75",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -1991,6 +1961,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "40",
         "distance": "7.3",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.75",
         "unit": "miles"
       }
     ],
@@ -2488,12 +2464,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "0",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -2501,6 +2471,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "50",
         "distance": "8.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "0",
         "unit": "miles"
       }
     ],
@@ -2736,12 +2712,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -2749,6 +2719,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "50",
         "distance": "10.3",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -3333,12 +3309,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -3346,6 +3316,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "47",
         "distance": "10",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -3478,12 +3454,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -3491,6 +3461,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "51",
         "distance": "11.3",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -3513,12 +3489,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -3526,6 +3496,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "40",
         "distance": "9.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -3548,12 +3524,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -3561,6 +3531,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "40",
         "distance": "9",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -3737,12 +3713,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -3750,6 +3720,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "57",
         "distance": "13",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -4036,12 +4012,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.15",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -4049,6 +4019,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.15",
         "unit": "miles"
       }
     ],
@@ -4307,12 +4283,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -4320,6 +4290,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.2",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -4940,12 +4916,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -4953,6 +4923,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "50",
         "distance": "11.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -4991,8 +4967,7 @@
   {
     "date": "2024-04-08",
     "focus": "Home Workout",
-    "exercises": "Solar Eclipse day! \ud83c\udf12",
-    "cardio": [
+    "exercises": [
       {
         "name": "Air Squat",
         "sets": 1,
@@ -5020,14 +4995,8 @@
         ]
       }
     ],
-    "notes": [
-      {
-        "activity": "\ud83d\udeb4 Bike Ride",
-        "duration": "55",
-        "distance": "12.1",
-        "unit": "miles"
-      }
-    ],
+    "cardio": [],
+    "notes": "",
     "period": false
   },
   {
@@ -5182,12 +5151,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5195,6 +5158,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "51",
         "distance": "12",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.1",
         "unit": "miles"
       }
     ],
@@ -5395,12 +5364,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5408,6 +5371,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.3",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -5456,12 +5425,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.75",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5469,6 +5432,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "11",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.75",
         "unit": "miles"
       }
     ],
@@ -5504,7 +5473,9 @@
             "completed": true
           }
         ]
-      },
+      }
+    ],
+    "cardio": [
       {
         "activity": "\ud83d\udc15 Dog Walk",
         "duration": "",
@@ -5512,7 +5483,6 @@
         "unit": "miles"
       }
     ],
-    "cardio": [],
     "notes": "",
     "period": false
   },
@@ -5571,12 +5541,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5584,6 +5548,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -5632,7 +5602,9 @@
             "completed": true
           }
         ]
-      },
+      }
+    ],
+    "cardio": [
       {
         "activity": "\ud83d\udc15 Dog Walk",
         "duration": "",
@@ -5640,7 +5612,6 @@
         "unit": "miles"
       }
     ],
-    "cardio": [],
     "notes": "",
     "period": false
   },
@@ -5712,12 +5683,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5725,6 +5690,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "47",
         "distance": "11.3",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -5747,12 +5718,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.25",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5760,6 +5725,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.25",
         "unit": "miles"
       }
     ],
@@ -5795,12 +5766,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5808,6 +5773,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.1",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.5",
         "unit": "miles"
       }
     ],
@@ -5830,12 +5801,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.25",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5843,6 +5808,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.1",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.25",
         "unit": "miles"
       }
     ],
@@ -5891,12 +5862,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5904,6 +5869,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.6",
         "unit": "miles"
       }
     ],
@@ -5939,12 +5910,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -5952,6 +5917,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7.2",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -6013,12 +5984,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6026,6 +5991,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -6074,12 +6045,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.75",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6087,6 +6052,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "51",
         "distance": "12",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.75",
         "unit": "miles"
       }
     ],
@@ -6122,12 +6093,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6135,6 +6100,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "50",
         "distance": "11.7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4",
         "unit": "miles"
       }
     ],
@@ -6170,12 +6141,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6183,6 +6148,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "60",
         "distance": "14",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -6218,12 +6189,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6231,6 +6196,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -6292,12 +6263,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6305,6 +6270,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "22",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -6340,12 +6311,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6353,6 +6318,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "40",
         "distance": "9",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -6388,12 +6359,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6401,6 +6366,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "55",
         "distance": "12.7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.5",
         "unit": "miles"
       }
     ],
@@ -6475,7 +6446,9 @@
             "completed": true
           }
         ]
-      },
+      }
+    ],
+    "cardio": [
       {
         "activity": "\ud83d\udc15 Dog Walk",
         "duration": "",
@@ -6483,7 +6456,6 @@
         "unit": "miles"
       }
     ],
-    "cardio": [],
     "notes": "",
     "period": false
   },
@@ -6597,12 +6569,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6610,6 +6576,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -6658,12 +6630,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6671,6 +6637,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -6719,12 +6691,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6732,6 +6698,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.3",
         "unit": "miles"
       }
     ],
@@ -6767,12 +6739,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "0",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6780,6 +6746,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "0",
         "unit": "miles"
       }
     ],
@@ -6815,12 +6787,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6828,6 +6794,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -6876,12 +6848,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6889,6 +6855,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.3",
         "unit": "miles"
       }
     ],
@@ -6937,12 +6909,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -6950,6 +6916,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.2",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.6",
         "unit": "miles"
       }
     ],
@@ -7040,12 +7012,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7053,6 +7019,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -7088,12 +7060,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7101,6 +7067,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -7149,12 +7121,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7162,6 +7128,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -7197,12 +7169,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7210,6 +7176,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -7258,12 +7230,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.75",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7271,6 +7237,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.75",
         "unit": "miles"
       }
     ],
@@ -7319,12 +7291,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7332,6 +7298,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -7367,12 +7339,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7380,6 +7346,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -7415,12 +7387,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7428,6 +7394,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -7463,12 +7435,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7476,6 +7442,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -7524,12 +7496,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.75",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7537,6 +7503,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.75",
         "unit": "miles"
       }
     ],
@@ -7585,12 +7557,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7598,6 +7564,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -7633,12 +7605,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7646,6 +7612,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -7694,12 +7666,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7707,6 +7673,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -7755,12 +7727,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7768,6 +7734,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -7816,12 +7788,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7829,6 +7795,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -7877,12 +7849,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7890,6 +7856,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -7938,12 +7910,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -7951,6 +7917,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -7999,12 +7971,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8012,6 +7978,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -8047,12 +8019,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8060,6 +8026,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -8108,12 +8080,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8121,6 +8087,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -8169,12 +8141,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8182,6 +8148,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -8217,12 +8189,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8230,6 +8196,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -8291,12 +8263,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8304,6 +8270,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -8352,12 +8324,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8365,6 +8331,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -8413,12 +8385,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8426,6 +8392,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -8474,12 +8446,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8487,6 +8453,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -8522,12 +8494,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8535,6 +8501,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -8583,12 +8555,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8596,6 +8562,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -8657,12 +8629,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8670,6 +8636,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -8718,12 +8690,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8731,6 +8697,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -8779,12 +8751,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8792,6 +8758,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -8827,12 +8799,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8840,6 +8806,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -8875,12 +8847,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8888,6 +8854,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -8936,12 +8908,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -8949,6 +8915,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -9010,12 +8982,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9023,6 +8989,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -9071,12 +9043,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9084,6 +9050,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -9119,12 +9091,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9132,6 +9098,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -9180,12 +9152,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9193,6 +9159,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -9241,12 +9213,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9254,6 +9220,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -9315,12 +9287,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9328,6 +9294,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -9363,12 +9335,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9376,6 +9342,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -9411,12 +9383,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9424,6 +9390,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -9472,12 +9444,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9485,6 +9451,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -9533,12 +9505,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9546,6 +9512,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -9581,12 +9553,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9594,6 +9560,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -9642,12 +9614,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9655,6 +9621,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -9690,12 +9662,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9703,6 +9669,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -9738,12 +9710,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9751,6 +9717,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -9799,12 +9771,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9812,6 +9778,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -9847,12 +9819,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9860,6 +9826,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -9895,12 +9867,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9908,6 +9874,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -9943,12 +9915,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -9956,6 +9922,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10004,12 +9976,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10017,6 +9983,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10052,12 +10024,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10065,6 +10031,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10113,12 +10085,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10126,6 +10092,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10161,12 +10133,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10174,6 +10140,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -10209,12 +10181,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10222,6 +10188,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10270,12 +10242,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10283,6 +10249,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10318,12 +10290,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10331,6 +10297,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10379,12 +10351,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10392,6 +10358,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -10427,12 +10399,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10440,6 +10406,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.8",
         "unit": "miles"
       }
     ],
@@ -10475,12 +10447,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10488,6 +10454,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -10523,12 +10495,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10536,6 +10502,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10584,12 +10556,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10597,6 +10563,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10632,12 +10604,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10645,6 +10611,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -10680,12 +10652,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10693,6 +10659,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -10728,12 +10700,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10741,6 +10707,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -10802,12 +10774,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10815,6 +10781,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10863,12 +10835,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10876,6 +10842,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -10924,12 +10896,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10937,6 +10903,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -10972,12 +10944,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -10985,6 +10951,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11033,12 +11005,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11046,6 +11012,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -11068,12 +11040,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11081,6 +11047,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -11129,12 +11101,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11142,6 +11108,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -11190,12 +11162,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11203,6 +11169,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -11238,12 +11210,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11251,6 +11217,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11299,12 +11271,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11312,6 +11278,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11334,12 +11306,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11347,6 +11313,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11382,12 +11354,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11395,6 +11361,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11430,12 +11402,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11443,6 +11409,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -11491,12 +11463,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11504,6 +11470,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11552,12 +11524,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11565,6 +11531,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -11613,12 +11585,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11626,6 +11592,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11674,12 +11646,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11687,6 +11653,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -11735,12 +11707,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11748,6 +11714,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -11796,12 +11768,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11809,6 +11775,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -11831,12 +11803,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11844,6 +11810,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -11892,12 +11864,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11905,6 +11871,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -11953,12 +11925,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -11966,6 +11932,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.4",
         "unit": "miles"
       }
     ],
@@ -12001,12 +11973,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12014,6 +11980,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -12036,12 +12008,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12049,6 +12015,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12071,12 +12043,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12084,6 +12050,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12158,12 +12130,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12171,6 +12137,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -12219,12 +12191,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12232,6 +12198,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -12267,12 +12239,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12280,6 +12246,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -12302,12 +12274,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12315,6 +12281,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "15",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12350,12 +12322,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12363,6 +12329,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -12411,12 +12383,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.9",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12424,6 +12390,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.9",
         "unit": "miles"
       }
     ],
@@ -12472,12 +12444,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12485,6 +12451,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -12507,12 +12479,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12520,6 +12486,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -12555,12 +12527,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12568,6 +12534,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12590,12 +12562,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12603,6 +12569,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12651,12 +12623,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12664,6 +12630,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -12712,12 +12684,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12725,6 +12691,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12773,12 +12745,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12786,6 +12752,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -12834,12 +12806,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12847,6 +12813,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12882,12 +12854,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12895,6 +12861,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -12943,12 +12915,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -12956,6 +12922,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -13004,12 +12976,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13017,6 +12983,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -13065,12 +13037,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13078,6 +13044,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.1",
         "unit": "miles"
       }
     ],
@@ -13126,12 +13098,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13139,6 +13105,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -13187,12 +13159,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13200,6 +13166,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -13248,12 +13220,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13261,6 +13227,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -13296,12 +13268,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13309,6 +13275,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -13357,12 +13329,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13370,6 +13336,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -13418,12 +13390,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13431,6 +13397,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -13479,12 +13451,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13492,6 +13458,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -13540,12 +13512,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13553,6 +13519,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -13588,12 +13560,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13601,6 +13567,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.2",
         "unit": "miles"
       }
     ],
@@ -13649,12 +13621,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13662,6 +13628,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -13723,12 +13695,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13736,6 +13702,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -13797,12 +13769,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13810,6 +13776,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -13884,12 +13856,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13897,6 +13863,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -13958,12 +13930,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -13971,6 +13937,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -14032,12 +14004,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.9",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14045,6 +14011,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.9",
         "unit": "miles"
       }
     ],
@@ -14106,12 +14078,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14119,6 +14085,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -14167,12 +14139,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14180,6 +14146,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.2",
         "unit": "miles"
       }
     ],
@@ -14241,12 +14213,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14254,6 +14220,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.3",
         "unit": "miles"
       }
     ],
@@ -14302,12 +14274,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14315,6 +14281,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.2",
         "unit": "miles"
       }
     ],
@@ -14363,12 +14335,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14376,6 +14342,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -14437,12 +14409,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14450,6 +14416,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -14511,12 +14483,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14524,6 +14490,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.8",
         "unit": "miles"
       }
     ],
@@ -14585,12 +14557,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14598,6 +14564,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -14659,12 +14631,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14672,6 +14638,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -14720,12 +14692,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14733,6 +14699,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -14794,12 +14766,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.9",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14807,6 +14773,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "22",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.9",
         "unit": "miles"
       }
     ],
@@ -14868,12 +14840,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14881,6 +14847,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -14942,12 +14914,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -14955,6 +14921,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.2",
         "unit": "miles"
       }
     ],
@@ -15016,12 +14988,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15029,6 +14995,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -15077,12 +15049,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15090,6 +15056,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "25",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -15151,12 +15123,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15164,6 +15130,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -15225,12 +15197,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15238,6 +15204,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -15325,12 +15297,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15338,6 +15304,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "6",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -15386,12 +15358,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15399,6 +15365,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "20",
         "distance": "5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1",
         "unit": "miles"
       }
     ],
@@ -15460,12 +15432,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15473,6 +15439,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.1",
         "unit": "miles"
       }
     ],
@@ -15602,12 +15574,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15615,6 +15581,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -15676,12 +15648,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15689,6 +15655,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -15763,12 +15735,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15776,6 +15742,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "12",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -15837,12 +15809,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15850,6 +15816,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -15937,12 +15909,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -15950,6 +15916,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -15998,12 +15970,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16011,6 +15977,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -16059,12 +16031,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16072,6 +16038,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "15",
         "distance": "4",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -16133,12 +16105,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16146,6 +16112,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2",
         "unit": "miles"
       }
     ],
@@ -16181,12 +16153,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16194,6 +16160,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "12",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.3",
         "unit": "miles"
       }
     ],
@@ -16242,12 +16214,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16255,6 +16221,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "14",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.3",
         "unit": "miles"
       }
     ],
@@ -16384,12 +16356,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16397,6 +16363,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.1",
         "unit": "miles"
       }
     ],
@@ -16471,12 +16443,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16484,6 +16450,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.2",
         "unit": "miles"
       }
     ],
@@ -16545,12 +16517,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16558,6 +16524,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.7",
         "unit": "miles"
       }
     ],
@@ -16606,12 +16578,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16619,6 +16585,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.6",
         "unit": "miles"
       }
     ],
@@ -16667,12 +16639,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16680,6 +16646,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.5",
         "unit": "miles"
       }
     ],
@@ -16741,12 +16713,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16754,6 +16720,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.7",
         "unit": "miles"
       }
     ],
@@ -16857,12 +16829,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16870,6 +16836,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -16944,12 +16916,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -16957,6 +16923,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -17031,12 +17003,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17044,6 +17010,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -17105,12 +17077,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17118,6 +17084,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.8",
         "unit": "miles"
       }
     ],
@@ -17179,12 +17151,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17192,6 +17158,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -17321,12 +17293,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17334,6 +17300,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.7",
         "unit": "miles"
       }
     ],
@@ -17421,12 +17393,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17434,6 +17400,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.4",
         "unit": "miles"
       }
     ],
@@ -17508,12 +17480,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17521,6 +17487,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.5",
         "unit": "miles"
       }
     ],
@@ -17595,12 +17567,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17608,6 +17574,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.6",
         "unit": "miles"
       }
     ],
@@ -17682,12 +17654,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17695,6 +17661,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -17769,12 +17741,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17782,6 +17748,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.7",
         "unit": "miles"
       }
     ],
@@ -17830,12 +17802,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.7",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17843,6 +17809,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.7",
         "unit": "miles"
       }
     ],
@@ -17946,12 +17918,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -17959,6 +17925,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.4",
         "unit": "miles"
       }
     ],
@@ -18033,12 +18005,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18046,6 +18012,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.6",
         "unit": "miles"
       }
     ],
@@ -18120,12 +18092,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18133,6 +18099,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -18207,12 +18179,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18220,6 +18186,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -18294,12 +18266,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18307,6 +18273,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.2",
         "unit": "miles"
       }
     ],
@@ -18449,12 +18421,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18462,6 +18428,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -18510,12 +18482,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "2.9",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18523,6 +18489,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "2.9",
         "unit": "miles"
       }
     ],
@@ -18610,12 +18582,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18623,6 +18589,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.2",
         "unit": "miles"
       }
     ],
@@ -18710,12 +18682,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18723,6 +18689,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "8",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -18823,12 +18795,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18836,6 +18802,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.4",
         "unit": "miles"
       }
     ],
@@ -18923,12 +18895,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -18936,6 +18902,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -18997,12 +18969,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19010,6 +18976,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.5",
         "unit": "miles"
       }
     ],
@@ -19084,12 +19056,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19097,6 +19063,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -19158,12 +19130,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19171,6 +19137,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -19232,12 +19204,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19245,6 +19211,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.8",
         "unit": "miles"
       }
     ],
@@ -19413,12 +19385,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19426,6 +19392,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.8",
         "unit": "miles"
       }
     ],
@@ -19487,12 +19459,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19500,6 +19466,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1.5",
         "unit": "miles"
       }
     ],
@@ -19574,12 +19546,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19587,6 +19553,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -19648,12 +19620,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19661,6 +19627,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -19735,12 +19707,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19748,6 +19714,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "9.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -19903,12 +19875,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19916,6 +19882,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.2",
         "unit": "miles"
       }
     ],
@@ -19977,12 +19949,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -19990,6 +19956,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.1",
         "unit": "miles"
       }
     ],
@@ -20064,12 +20036,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20077,6 +20043,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "34",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -20151,12 +20123,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20164,6 +20130,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "33",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.6",
         "unit": "miles"
       }
     ],
@@ -20238,12 +20210,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20251,6 +20217,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "32",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -20406,12 +20378,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20419,6 +20385,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4",
         "unit": "miles"
       }
     ],
@@ -20480,12 +20452,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20493,6 +20459,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "31",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "1",
         "unit": "miles"
       }
     ],
@@ -20567,12 +20539,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20580,6 +20546,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "32",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.2",
         "unit": "miles"
       }
     ],
@@ -20654,12 +20626,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20667,6 +20633,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "31",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.4",
         "unit": "miles"
       }
     ],
@@ -20741,12 +20713,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20754,6 +20720,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "33",
         "distance": "7.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3",
         "unit": "miles"
       }
     ],
@@ -20828,12 +20800,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20841,6 +20807,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.4",
         "unit": "miles"
       }
     ],
@@ -20915,12 +20887,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -20928,6 +20894,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "31",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.5",
         "unit": "miles"
       }
     ],
@@ -21070,12 +21042,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21083,6 +21049,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "32",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.6",
         "unit": "miles"
       }
     ],
@@ -21170,12 +21142,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21183,6 +21149,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.5",
         "unit": "miles"
       }
     ],
@@ -21257,12 +21229,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21270,6 +21236,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.8",
         "unit": "miles"
       }
     ],
@@ -21344,12 +21316,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21357,6 +21323,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "32",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -21431,12 +21403,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.8",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21444,6 +21410,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "31",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.8",
         "unit": "miles"
       }
     ],
@@ -21586,12 +21558,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21599,6 +21565,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.5",
         "unit": "miles"
       }
     ],
@@ -21686,12 +21658,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "5.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21699,6 +21665,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "5.2",
         "unit": "miles"
       }
     ],
@@ -21773,12 +21745,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21786,6 +21752,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.4",
         "unit": "miles"
       }
     ],
@@ -21860,12 +21832,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21873,6 +21839,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "5",
         "unit": "miles"
       }
     ],
@@ -21947,12 +21919,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.2",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -21960,6 +21926,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.2",
         "unit": "miles"
       }
     ],
@@ -22021,12 +21993,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22034,6 +22000,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "6",
         "unit": "miles"
       }
     ],
@@ -22108,12 +22080,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22121,6 +22087,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "32",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4",
         "unit": "miles"
       }
     ],
@@ -22182,15 +22154,15 @@
             "completed": true
           }
         ]
-      },
+      }
+    ],
+    "cardio": [
       {
         "activity": "\ud83d\udc15 Dog Walk",
         "duration": "",
         "distance": "5",
         "unit": "miles"
-      }
-    ],
-    "cardio": [
+      },
       {
         "activity": "\ud83d\udc15 Dog Walk",
         "duration": "",
@@ -22269,12 +22241,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.4",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22282,6 +22248,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "33",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.4",
         "unit": "miles"
       }
     ],
@@ -22395,12 +22367,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22415,6 +22381,12 @@
         "duration": "25",
         "distance": "",
         "unit": ""
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "5",
+        "unit": "miles"
       }
     ],
     "notes": "",
@@ -22488,12 +22460,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.6",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22501,6 +22467,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.6",
         "unit": "miles"
       }
     ],
@@ -22562,12 +22534,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22575,6 +22541,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.3",
         "unit": "miles"
       }
     ],
@@ -22662,12 +22634,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "4.1",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22675,6 +22641,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "45",
         "distance": "10.5",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "4.1",
         "unit": "miles"
       }
     ],
@@ -22762,12 +22734,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "3.3",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22775,6 +22741,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "3.3",
         "unit": "miles"
       }
     ],
@@ -22849,12 +22821,6 @@
             "completed": true
           }
         ]
-      },
-      {
-        "activity": "\ud83d\udc15 Dog Walk",
-        "duration": "",
-        "distance": "5",
-        "unit": "miles"
       }
     ],
     "cardio": [
@@ -22862,6 +22828,12 @@
         "activity": "\ud83d\udeb4 Bike Ride",
         "duration": "30",
         "distance": "7",
+        "unit": "miles"
+      },
+      {
+        "activity": "\ud83d\udc15 Dog Walk",
+        "duration": "",
+        "distance": "5",
         "unit": "miles"
       }
     ],
@@ -25796,100 +25768,92 @@
   }
 ];
 
-    let done = 0, errs = 0;
-
-    function log(msg, cls="") {
-      const el = document.getElementById("log");
-      const line = document.createElement("div");
-      line.className = cls;
-      line.textContent = msg;
-      el.appendChild(line);
-      el.scrollTop = el.scrollHeight;
-    }
-
-    function buildFirestoreDoc(s) {
-      // Convert session to firestore format matching app schema
-      const exercises = (s.exercises || []).map(e => ({
-        name: e.name,
-        sets: e.sets || 1,
-        reps: e.reps || 0,
-        setData: e.setData || [],
-      }));
-
-      const cardio = (s.cardio || []).map(c => ({
-        activity: c.activity || "",
-        duration: c.duration || "",
-        distance: c.distance || "",
-        unit: c.unit || "miles",
-      }));
-
-      return {
-        user: "sky",
-        date: s.date,
-        day: guessDay(s.focus),
-        focus: s.focus || "",
-        exercises,
-        cardio,
-        notes: s.notes || "",
-        period: s.period || null,
-        volume: calcVolume(exercises),
-        timestamp: new Date(s.date + "T12:00:00"),
-      };
+    function sanitize(val) {
+      // Recursively remove any undefined values — replace with null
+      if (Array.isArray(val)) return val.map(sanitize);
+      if (val && typeof val === 'object') {
+        const out = {};
+        for (const [k,v] of Object.entries(val)) {
+          if (v !== undefined) out[k] = sanitize(v);
+        }
+        return out;
+      }
+      return val === undefined ? null : val;
     }
 
     function guessDay(focus) {
-      if (!focus) return "custom";
-      const f = focus.toLowerCase();
-      if (f.includes("legs") || f.includes("🦵")) return "sun";
-      if (f.includes("chest") && f.includes("tri")) {
-        // Mon or Fri based on... just use mon
-        return "mon";
-      }
-      if (f.includes("back") && f.includes("bi")) return "tue";
-      if (f.includes("shoulders") || f.includes("🔝")) return "thu";
-      if (f.includes("cardio") || f.includes("🚴")) return "cardio";
-      return "custom";
+      const f = (focus||'').toLowerCase();
+      if (f.includes('legs') || f.includes('🦵')) return 'sun';
+      if (f.includes('chest') && f.includes('tri')) return 'mon';
+      if (f.includes('back') && f.includes('bi')) return 'tue';
+      if (f.includes('shoulders') || f.includes('🔝')) return 'thu';
+      return 'custom';
     }
 
     function calcVolume(exercises) {
       let vol = 0;
-      (exercises || []).forEach(e => {
-        (e.setData || []).forEach(s => {
-          const w = parseFloat(s.weight) || 0;
-          const r = parseInt(s.reps) || 0;
+      (exercises||[]).forEach(e => {
+        (e.setData||[]).forEach(s => {
+          const w = parseFloat(s.weight)||0;
+          const r = parseInt(s.reps)||0;
           if (w > 0 && r > 0) vol += w * r;
         });
       });
       return vol;
     }
 
+    function buildDoc(s) {
+      const exercises = (s.exercises||[]).filter(e => e && typeof e === 'object' && e.name);
+      const cardio    = (s.cardio||[]).filter(c => c && typeof c === 'object' && c.activity);
+      return sanitize({
+        user:      'sky',
+        date:      s.date || '',
+        day:       guessDay(s.focus),
+        focus:     s.focus || 'Home Workout',
+        exercises,
+        cardio,
+        notes:     typeof s.notes === 'string' ? s.notes : '',
+        period:    s.period === true ? true : false,
+        volume:    calcVolume(exercises),
+        timestamp: new Date((s.date||'2023-01-01') + 'T12:00:00'),
+      });
+    }
+
+    function log(msg, cls='') {
+      const el = document.getElementById('log');
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = msg;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    let done = 0, errs = 0;
+
     window.startImport = async function() {
-      const btn = document.getElementById("start-btn");
-      btn.disabled = true;
-      btn.textContent = "Importing…";
-      log(`Starting import of ${SESSIONS.length} sessions…`, "info");
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('start-btn').textContent = 'Importing…';
+      log('Starting import of ' + SESSIONS.length + ' sessions…', 'info');
 
       for (let i = 0; i < SESSIONS.length; i++) {
         const s = SESSIONS[i];
         try {
-          const doc = buildFirestoreDoc(s);
-          await addDoc(collection(db, "workouts"), doc);
+          await addDoc(collection(db, 'workouts'), buildDoc(s));
           done++;
-          document.getElementById("stat-done").textContent = done;
-          document.getElementById("prog").style.width = Math.round((done + errs) / SESSIONS.length * 100) + "%";
-          if (i % 20 === 0) log(`✓ ${done} imported (${s.date})`, "ok");
-        } catch (err) {
+          document.getElementById('stat-done').textContent = done;
+          document.getElementById('prog').style.width = Math.round((done+errs)/SESSIONS.length*100) + '%';
+          if (i % 25 === 0) log('✓ ' + done + ' imported (' + s.date + ')', 'ok');
+        } catch(err) {
           errs++;
-          document.getElementById("stat-err").textContent = errs;
-          log(`✗ Error on ${s.date}: ${err.message}`, "err");
+          document.getElementById('stat-err').textContent = errs;
+          log('✗ ' + s.date + ': ' + err.message, 'err');
         }
-        // Small delay to avoid hammering Firestore
-        if (i % 50 === 49) await new Promise(r => setTimeout(r, 500));
+        if (i % 50 === 49) await new Promise(r => setTimeout(r, 400));
       }
 
-      log(`Done! ${done} imported, ${errs} errors.`, done > 0 ? "ok" : "err");
-      btn.textContent = "✅ Done";
-      document.getElementById("done-msg").style.display = "block";
+      log('Done! ' + done + ' imported, ' + errs + ' errors.', done > 0 ? 'ok' : 'err');
+      document.getElementById('start-btn').textContent = '✅ Done';
+      if (errs === 0) document.getElementById('done-msg').style.display = 'block';
     };
   </script>
 </body>
