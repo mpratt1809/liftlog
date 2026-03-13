@@ -1377,6 +1377,7 @@ function toggleHistoryDetail(idx) {
   if (chev) chev.style.transform = open ? "rotate(180deg)" : "";
 }
 
+function updateHistStats(sessions) {
   document.getElementById("stat-total").textContent = sessions.length;
   const sortedDates = [...new Set(sessions.map(s=>s.date))].sort().reverse();
   let streak = 0;
