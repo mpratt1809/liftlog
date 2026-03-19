@@ -1527,12 +1527,40 @@ function toggleHistoryDetail(idx) {
 
 function updateHistStats(sessions) {
   document.getElementById("stat-total").textContent = sessions.length;
-  const sortedDates = [...new Set(sessions.map(s=>s.date))].sort().reverse();
-  let streak = 0;
-  for (let i=0; i<sortedDates.length; i++) {
-    if (sortedDates[i] === new Date(Date.now()-i*86400000).toLocaleDateString("en-CA")) streak++;
-    else break;
+  const sessionDates = new Set(sessions.map(s=>s.date));
+
+  // Build a helper to check if a date is a rest day
+  const DAY_NAMES_FULL = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+  function isRestDay(dateStr) {
+    const d = new Date(dateStr + "T12:00:00");
+    const dayName = DAY_NAMES_FULL[d.getDay()];
+    return !GYM_DAYS.includes(dayName);
   }
+
+  // Walk backwards from today, skipping rest days
+  let streak = 0;
+  let d = new Date();
+  let checked = 0;
+  while (checked < 365) {
+    const dateStr = d.toLocaleDateString("en-CA");
+    if (isRestDay(dateStr)) {
+      // Skip rest days — they don't count for or against the streak
+      d.setDate(d.getDate() - 1);
+      checked++;
+      continue;
+    }
+    if (sessionDates.has(dateStr)) {
+      streak++;
+    } else {
+      // It's a gym day with no session — streak is broken
+      // But only break if this is in the past (not today, which might not be done yet)
+      const todayStr = new Date().toLocaleDateString("en-CA");
+      if (dateStr !== todayStr) break;
+    }
+    d.setDate(d.getDate() - 1);
+    checked++;
+  }
+
   document.getElementById("stat-streak").textContent = streak+"🔥";
   const todayStr = new Date().toLocaleDateString("en-CA");
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
