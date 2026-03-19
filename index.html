@@ -116,12 +116,24 @@
 
 
     /* ── Warm-up ── */
-    .warmup-bar { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
-    .warmup-bar:hover { border-color: var(--accent); }
-    .warmup-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--success); transition: all 0.2s; flex-shrink: 0; }
+    .warmup-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+    .warmup-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; }
+    .warmup-header:hover { background: rgba(255,255,255,0.02); }
+    .warmup-title { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+    .warmup-progress { font-size: 11px; color: var(--muted); }
+    .warmup-chevron { color: var(--muted); font-size: 16px; transition: transform 0.2s; }
+    .warmup-chevron.open { transform: rotate(180deg); }
+    .warmup-body { display: none; padding: 0 16px 14px; border-top: 1px solid var(--border); }
+    .warmup-body.open { display: block; }
+    .warmup-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; }
+    .warmup-item:last-child { border-bottom: none; }
+    .warmup-check { width: 20px; height: 20px; min-width: 20px; border-radius: 5px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--success); transition: all 0.2s; }
     .warmup-check.done { background: rgba(46,213,115,0.15); border-color: var(--success); }
-    .warmup-label { font-size: 13px; font-weight: 600; color: var(--muted); }
-    .warmup-bar.done .warmup-label { color: var(--success); }
+    .warmup-item-text { font-size: 13px; color: var(--text); flex: 1; transition: all 0.2s; }
+    .warmup-item-text.struck { text-decoration: line-through; color: var(--muted); }
+    .warmup-edit-btn { font-size: 11px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .warmup-edit-btn:hover { color: var(--text); background: var(--border); }
+    .warmup-custom-input { flex: 1; background: var(--surface); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 8px; font-size: 13px; color: var(--text); font-family: var(--font-body); }
 
     /* ── Drag reorder ── */
     .drag-handle { cursor: grab; color: var(--muted); font-size: 16px; padding: 4px 6px; flex-shrink: 0; touch-action: none; }
@@ -155,8 +167,8 @@
     .remove-ex-btn:hover { background: rgba(255,71,87,0.15); border-color: var(--danger); }
     .exercise-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
     .exercise-body.open { display: block; }
-    .sets-config { display: flex; gap: 10px; margin: 12px 0; align-items: flex-end; flex-wrap: wrap; }
-    .sets-config > div { flex: 1; min-width: 100px; }
+    .sets-config { display: flex; gap: 10px; margin: 12px 0; align-items: flex-end; flex-wrap: nowrap; }
+    .sets-config > div { flex: 1; min-width: 0; }
 
     /* ── Set Rows ── */
     .set-headers { display: grid; grid-template-columns: 40px 1fr 1fr 34px; gap: 8px; margin-bottom: 6px; }
@@ -578,8 +590,11 @@ const db    = getFirestore(fbApp);
 const WORKOUT_PLAN = {
   sunday: {
     label: "Sunday", focus: "🦵 Legs",
+    warmup: ["5 min treadmill or bike", "Leg swings x10 each side", "Bodyweight squats x15", "Hip circles x10 each side"],
     exercises: [
-      { name: "Leg Press",                       skyWeight: "50–90 lbs",     skyMod: "safe",    sets: 4, reps: 8  },
+      { name: "Barbell Squat",                    skyWeight: "—",             skyMod: "skip",    sets: 4, reps: 6,  youOnly: true },
+      { name: "Romanian Deadlift",                skyWeight: "—",             skyMod: "skip",    sets: 3, reps: 8,  youOnly: true },
+      { name: "Leg Press",                        skyWeight: "50–90 lbs",     skyMod: "safe",    sets: 4, reps: 8  },
       { name: "Leg Extension Machine",            skyWeight: "40–50 lbs",     skyMod: "safe",    sets: 3, reps: 10 },
       { name: "Leg Curl Machine (lying)",         skyWeight: "50–70 lbs",     skyMod: "safe",    sets: 3, reps: 10 },
       { name: "Outer Thigh Machine",              skyWeight: "80 lbs",        skyMod: "safe",    sets: 3, reps: 12 },
@@ -588,12 +603,11 @@ const WORKOUT_PLAN = {
       { name: "Individual Calf Raises each leg",  skyWeight: "bodyweight",    skyMod: "safe",    sets: 3, reps: 15 },
       { name: "Step Ups",                         skyWeight: "bodyweight",    skyMod: "safe",    sets: 3, reps: 20 },
       { name: "Lunges",                           skyWeight: "bodyweight",    skyMod: "caution", sets: 3, reps: 20 },
-      { name: "Barbell Squat",                    skyWeight: "—",             skyMod: "skip",    sets: 4, reps: 6,  youOnly: true },
-      { name: "Romanian Deadlift",                skyWeight: "—",             skyMod: "skip",    sets: 3, reps: 8,  youOnly: true },
     ]
   },
   monday: {
     label: "Monday", focus: "💥 Chest & Triceps",
+    warmup: ["5 min light cardio", "Arm circles x20", "Band pull-aparts x15", "Light push-ups x10"],
     exercises: [
       { name: "Bench Press",                 skyWeight: "75–90 lbs",   skyMod: "safe", sets: 4, reps: 6  },
       { name: "Incline Press",               skyWeight: "30–65 lbs",   skyMod: "safe", sets: 3, reps: 8  },
@@ -602,10 +616,12 @@ const WORKOUT_PLAN = {
       { name: "Seated Dip Machine",          skyWeight: "95–115 lbs",  skyMod: "safe", sets: 3, reps: 8  },
       { name: "Tricep Ext — cable back pad", skyWeight: "22–33 lbs",   skyMod: "safe", sets: 3, reps: 10 },
       { name: "Individual Tricep Ext cable", skyWeight: "11–16.5 lbs", skyMod: "safe", sets: 3, reps: 10 },
+      { name: "Plank",                       skyWeight: "bodyweight",  skyMod: "safe", sets: 3, reps: 30, note: "30 sec hold" },
     ]
   },
   tuesday: {
     label: "Tuesday", focus: "🏋️ Back & Biceps",
+    warmup: ["5 min rowing machine or bike", "Shoulder rolls x10", "Band pull-aparts x15", "Cat-cow stretch x10"],
     exercises: [
       { name: "Lat Pulldown — wide grip",         skyWeight: "88–99 lbs",   skyMod: "safe", sets: 4, reps: 6  },
       { name: "Lat Pulldown — close grip",        skyWeight: "99–121 lbs",  skyMod: "safe", sets: 3, reps: 8  },
@@ -615,27 +631,26 @@ const WORKOUT_PLAN = {
       { name: "DB Bicep Curls",                   skyWeight: "20–40 lbs",   skyMod: "safe", sets: 3, reps: 10 },
       { name: "Mini Cable Bar Bicep Curls",       skyWeight: "22–38.5 lbs", skyMod: "safe", sets: 3, reps: 10 },
       { name: "Zottman Curls",                    skyWeight: "25 lbs",      skyMod: "safe", sets: 3, reps: 10 },
-      { name: "Bicep Curl Orange Machine",        skyWeight: "65–105 lbs",  skyMod: "safe", sets: 3, reps: 10 },
     ]
   },
-  wednesday: { label: "Wednesday", focus: "🛌 Rest Day", rest: true, exercises: [] },
+  wednesday: { label: "Wednesday", focus: "🛌 Rest Day", rest: true, exercises: [], warmup: [] },
   thursday: {
     label: "Thursday", focus: "🔝 Shoulders",
+    warmup: ["5 min light cardio", "Arm circles x20 each direction", "Band pull-aparts x15", "Neck rolls x10"],
     exercises: [
-      { name: "Shoulder Press Machine",               skyWeight: "50–85 lbs",     skyMod: "safe", sets: 4, reps: 6  },
-      { name: "DB Shoulder Press",                    skyWeight: "50–60 lbs",     skyMod: "safe", sets: 3, reps: 8  },
-      { name: "Cable Delt Raise — S bar",             skyWeight: "27.5–49.5 lbs", skyMod: "safe", sets: 3, reps: 10 },
-      { name: "Delt Face Pulls — rope cable",         skyWeight: "27.5–33 lbs",   skyMod: "safe", sets: 3, reps: 10 },
-      { name: "Trap Machine / DB Traps",              skyWeight: "60–90 lbs",     skyMod: "safe", sets: 3, reps: 10 },
-      { name: "Delt Fly Machine",                     skyWeight: "60–70 lbs",     skyMod: "safe", sets: 3, reps: 10 },
-      { name: "DB Lateral Raises",                    skyWeight: "16–20 lbs",     skyMod: "safe", sets: 3, reps: 12 },
-      { name: "DB Front Raises",                      skyWeight: "16 lbs",        skyMod: "safe", sets: 3, reps: 12 },
-      { name: "Rear Delt Fly / rope",                 skyWeight: "16–27.5 lbs",   skyMod: "safe", sets: 3, reps: 10 },
-      { name: "Individual shoulder side twist cable", skyWeight: "11 lbs",        skyMod: "safe", sets: 3, reps: 10 },
+      { name: "Shoulder Press Machine",       skyWeight: "50–85 lbs",     skyMod: "safe", sets: 4, reps: 6  },
+      { name: "DB Shoulder Press",            skyWeight: "50–60 lbs",     skyMod: "safe", sets: 3, reps: 8  },
+      { name: "Cable Delt Raise — S bar",     skyWeight: "27.5–49.5 lbs", skyMod: "safe", sets: 3, reps: 10 },
+      { name: "Delt Face Pulls — rope cable", skyWeight: "27.5–33 lbs",   skyMod: "safe", sets: 3, reps: 10 },
+      { name: "Trap Machine / DB Traps",      skyWeight: "60–90 lbs",     skyMod: "safe", sets: 3, reps: 10 },
+      { name: "Delt Fly Machine",             skyWeight: "60–70 lbs",     skyMod: "safe", sets: 3, reps: 10 },
+      { name: "DB Lateral + Front Raises",    skyWeight: "16–20 lbs",     skyMod: "safe", sets: 3, reps: 12, note: "Superset: lateral then front" },
+      { name: "Rear Delt Fly / rope",         skyWeight: "16–27.5 lbs",   skyMod: "safe", sets: 3, reps: 10 },
     ]
   },
   friday: {
     label: "Friday", focus: "⚡ Chest/Tri + Back/Bi (Lighter)",
+    warmup: ["5 min light cardio", "Arm circles x15", "Band pull-aparts x12", "Light push-ups x10"],
     exercises: [
       { name: "Bench Press or Incline Press", skyWeight: "75–85 lbs",   skyMod: "safe", sets: 3, reps: 10 },
       { name: "Chest Fly (cable)",            skyWeight: "60–80 lbs",   skyMod: "safe", sets: 3, reps: 12 },
@@ -647,7 +662,7 @@ const WORKOUT_PLAN = {
       { name: "DB Bicep Curls",               skyWeight: "20–30 lbs",   skyMod: "safe", sets: 3, reps: 12 },
     ]
   },
-  saturday: { label: "Saturday", focus: "🛌 Rest Day", rest: true, exercises: [] },
+  saturday: { label: "Saturday", focus: "🛌 Rest Day", rest: true, exercises: [], warmup: [] },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -691,7 +706,11 @@ let cardioCounter   = 0;
 // ─────────────────────────────────────────────────────────────
 window.toggleHistoryDetail         = toggleHistoryDetail;
 window.toggleWarmup                = toggleWarmup;
+window.toggleWarmupItem            = toggleWarmupItem;
+window.toggleWarmupSection         = toggleWarmupSection;
+window.editWarmupItem              = editWarmupItem;
 window.toggleBodyweight            = toggleBodyweight;
+window.saveDraft                   = saveDraft;
 window.selectUser              = selectUser;
 window.switchUser              = switchUser;
 window.showTab                 = showTab;
@@ -767,10 +786,16 @@ function buildDayPills() {
 
 function selectDay(day) {
   selectedDay = day;
+  warmupChecked = new Set();
+  warmupCustom  = {};
+  warmupOpen    = true;
+  bwExercises.clear();
   document.querySelectorAll(".day-pill").forEach(p => p.classList.toggle("active", p.dataset.day === day));
   document.getElementById("day-focus").textContent = WORKOUT_PLAN[day].focus;
   buildExercises(day);
   buildCardioSection();
+  // Try to restore draft after building
+  setTimeout(() => restoreDraft(), 100);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -815,16 +840,39 @@ function renderExerciseList() {
   const c = document.getElementById("exercises-container");
   c.innerHTML = "";
 
-  // Warm-up bar
-  const warmupDone = c.getAttribute("data-warmup") === "true";
-  const warmupBar = document.createElement("div");
-  warmupBar.className = `warmup-bar${warmupDone?" done":""}`;
-  warmupBar.id = "warmup-bar";
-  warmupBar.innerHTML = `
-    <div class="warmup-check${warmupDone?" done":""}" id="warmup-check">${warmupDone?"✓":""}</div>
-    <span class="warmup-label">🔥 Warm-up complete</span>`;
-  warmupBar.onclick = toggleWarmup;
-  c.appendChild(warmupBar);
+  // Warm-up block with per-item checkboxes
+  const plan = WORKOUT_PLAN[selectedDay];
+  const warmupItems = (plan?.warmup || []).map((item, i) => {
+    // Check if this item was customized in state
+    const text    = warmupCustom[i] !== undefined ? warmupCustom[i] : item;
+    const checked = warmupChecked.has(i);
+    return { text, checked, i, original: item };
+  });
+  const doneCount  = warmupItems.filter(w => w.checked).length;
+  const totalCount = warmupItems.length;
+  const allDone    = totalCount > 0 && doneCount === totalCount;
+
+  if (totalCount > 0) {
+    const itemsHTML = warmupItems.map(w => `
+      <div class="warmup-item" id="warmup-item-${w.i}">
+        <div class="warmup-check${w.checked?" done":""}" onclick="toggleWarmupItem(${w.i})">${w.checked?"✓":""}</div>
+        <span class="warmup-item-text${w.checked?" struck":""}" id="warmup-text-${w.i}">${w.text}</span>
+        <button class="warmup-edit-btn" onclick="editWarmupItem(${w.i})" title="Edit">✏️</button>
+      </div>`).join("");
+
+    const block = document.createElement("div");
+    block.className = "warmup-block";
+    block.id = "warmup-block";
+    block.innerHTML = `
+      <div class="warmup-header" onclick="toggleWarmupSection()">
+        <div class="warmup-title">🔥 Warm-up <span class="warmup-progress">${doneCount}/${totalCount}${allDone?" ✓":""}</span></div>
+        <span class="warmup-chevron${warmupOpen?" open":""}" id="warmup-chevron">▾</span>
+      </div>
+      <div class="warmup-body${warmupOpen?" open":""}" id="warmup-body">
+        ${itemsHTML}
+      </div>`;
+    c.appendChild(block);
+  }
 
   activeExercises.forEach((ex, idx) => c.appendChild(buildExerciseBlock(ex, idx)));
   c.appendChild(buildAddPanel());
@@ -1095,9 +1143,146 @@ window.confirmAddExercise = function() {
 function addExerciseFromDropdown() {} // kept for compatibility
 function addCustomExercise() {}
 
+// ── Draft auto-save / restore ─────────────────────────────────
+const DRAFT_KEY = "liftlog_draft";
+
+function saveDraft() {
+  if (!selectedDay) return;
+  // Capture current form values
+  const exerciseData = activeExercises.map((ex, idx) => {
+    const sets  = parseInt(document.getElementById(`sets-${idx}`)?.value || ex.sets);
+    const reps  = parseInt(document.getElementById(`reps-${idx}`)?.value || ex.reps);
+    const notes = document.getElementById(`notes-${idx}`)?.value || "";
+    const isBW  = bwExercises.has(idx);
+    const setData = [];
+    for (let s = 1; s <= sets; s++) {
+      setData.push({
+        weight: isBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || ""),
+        reps:   document.getElementById(`actualreps-${idx}-${s}`)?.value || "",
+        done:   document.getElementById(`done-${idx}-${s}`)?.classList.contains("done") || false,
+      });
+    }
+    return { name: ex.name, sets, reps, notes, isBW, setData, skyMod: ex.skyMod, skyWeight: ex.skyWeight };
+  });
+
+  const draft = {
+    user:         currentUser,
+    day:          selectedDay,
+    date:         new Date().toLocaleDateString("en-CA"),
+    exercises:    exerciseData,
+    warmupChecked: [...warmupChecked],
+    warmupCustom,
+    warmupOpen,
+    notes:        document.getElementById("session-notes")?.value || "",
+    bwExercises:  [...bwExercises],
+  };
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(e) {}
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+    // Only restore if same user, same day, same date
+    const today = new Date().toLocaleDateString("en-CA");
+    if (draft.user !== currentUser || draft.day !== selectedDay || draft.date !== today) return false;
+
+    // Restore warmup state
+    warmupChecked = new Set(draft.warmupChecked || []);
+    warmupCustom  = draft.warmupCustom || {};
+    warmupOpen    = draft.warmupOpen !== undefined ? draft.warmupOpen : true;
+
+    // Restore exercises
+    bwExercises.clear();
+    (draft.bwExercises || []).forEach(i => bwExercises.add(i));
+    activeExercises = draft.exercises.map(e => ({
+      name: e.name, sets: e.sets, reps: e.reps,
+      skyMod: e.skyMod, skyWeight: e.skyWeight
+    }));
+
+    renderExerciseList();
+
+    // Restore input values after DOM is built
+    setTimeout(() => {
+      draft.exercises.forEach((ex, idx) => {
+        const setsEl = document.getElementById(`sets-${idx}`);
+        const repsEl = document.getElementById(`reps-${idx}`);
+        const notesEl = document.getElementById(`notes-${idx}`);
+        if (setsEl) setsEl.value = ex.sets;
+        if (repsEl) repsEl.value = ex.reps;
+        if (notesEl) notesEl.value = ex.notes || "";
+        // Rebuild set rows then fill values
+        rebuildSetRows(idx);
+        setTimeout(() => {
+          ex.setData.forEach((s, si) => {
+            const w = document.getElementById(`weight-${idx}-${si+1}`);
+            const r = document.getElementById(`actualreps-${idx}-${si+1}`);
+            const d = document.getElementById(`done-${idx}-${si+1}`);
+            if (w && !ex.isBW) w.value = s.weight;
+            if (r) r.value = s.reps;
+            if (d && s.done) d.classList.add("done");
+          });
+        }, 50);
+      });
+      const notesEl = document.getElementById("session-notes");
+      if (notesEl) notesEl.value = draft.notes || "";
+    }, 50);
+
+    return true;
+  } catch(e) { return false; }
+}
+
 function removeExercise(idx) {
+  // Save current form data into activeExercises before splicing
+  activeExercises.forEach((ex, i) => {
+    ex._savedSets  = parseInt(document.getElementById(`sets-${i}`)?.value  || ex.sets);
+    ex._savedReps  = parseInt(document.getElementById(`reps-${i}`)?.value  || ex.reps);
+    ex._savedNotes = document.getElementById(`notes-${i}`)?.value || "";
+    ex._savedSetData = [];
+    for (let s = 1; s <= ex._savedSets; s++) {
+      ex._savedSetData.push({
+        weight: document.getElementById(`weight-${i}-${s}`)?.value || "",
+        reps:   document.getElementById(`actualreps-${i}-${s}`)?.value || "",
+        done:   document.getElementById(`done-${i}-${s}`)?.classList.contains("done") || false,
+      });
+    }
+  });
+  // Also save bw state
+  const newBW = new Set();
+  bwExercises.forEach(i => { if (i < idx) newBW.add(i); else if (i > idx) newBW.add(i-1); });
+  bwExercises = newBW;
+
   activeExercises.splice(idx, 1);
   renderExerciseList();
+
+  // Restore saved values into rebuilt DOM
+  setTimeout(() => {
+    activeExercises.forEach((ex, i) => {
+      if (!ex._savedSets) return;
+      const setsEl = document.getElementById(`sets-${i}`);
+      if (setsEl) { setsEl.value = ex._savedSets; rebuildSetRows(i); }
+      const repsEl = document.getElementById(`reps-${i}`);
+      if (repsEl) repsEl.value = ex._savedReps;
+      const notesEl = document.getElementById(`notes-${i}`);
+      if (notesEl) notesEl.value = ex._savedNotes;
+      setTimeout(() => {
+        (ex._savedSetData || []).forEach((s, si) => {
+          const w = document.getElementById(`weight-${i}-${si+1}`);
+          const r = document.getElementById(`actualreps-${i}-${si+1}`);
+          const d = document.getElementById(`done-${i}-${si+1}`);
+          if (w) w.value = s.weight;
+          if (r) r.value = s.reps;
+          if (d && s.done) d.classList.add("done");
+        });
+      }, 50);
+    });
+    saveDraft();
+  }, 50);
 }
 
 function toggleEx(idx) {
@@ -1118,8 +1303,10 @@ function rebuildSetRows(idx) {
       <div class="set-num">S${s}</div>
       <input type="number" inputmode="decimal" id="weight-${idx}-${s}"
         placeholder="${isBW?"bodyweight":"e.g. 80"}" min="0" step="0.5"
-        value="${isBW?"":""}" ${isBW?'disabled style="opacity:0.4"':""} />
-      <input type="number" id="actualreps-${idx}-${s}" placeholder="reps" min="1" max="50" />
+        value="${isBW?"":""}" ${isBW?'disabled style="opacity:0.4"':""}
+        oninput="saveDraft()" />
+      <input type="number" id="actualreps-${idx}-${s}" placeholder="reps" min="1" max="50"
+        oninput="saveDraft()" />
       <button class="set-complete-btn" id="done-${idx}-${s}" onclick="toggleSetDone(${idx},${s})">✓</button>`;
     c.appendChild(row);
   }
@@ -1129,14 +1316,54 @@ function toggleSetDone(idx, s) {
   document.getElementById(`done-${idx}-${s}`)?.classList.toggle("done");
 }
 
-// ── Warm-up ────────────────────────────────────────────────────
-let warmupComplete = false;
-function toggleWarmup() {
-  warmupComplete = !warmupComplete;
-  const bar   = document.getElementById("warmup-bar");
-  const check = document.getElementById("warmup-check");
-  if (bar)   bar.classList.toggle("done", warmupComplete);
-  if (check) { check.classList.toggle("done", warmupComplete); check.textContent = warmupComplete ? "✓" : ""; }
+// ── Warm-up state ─────────────────────────────────────────────
+let warmupChecked = new Set(); // indexes of checked warmup items
+let warmupCustom  = {};        // { index: customText } overrides
+let warmupOpen    = true;      // section expanded by default
+
+function toggleWarmupSection() {
+  warmupOpen = !warmupOpen;
+  document.getElementById("warmup-body")?.classList.toggle("open", warmupOpen);
+  document.getElementById("warmup-chevron")?.classList.toggle("open", warmupOpen);
+}
+
+function toggleWarmupItem(i) {
+  if (warmupChecked.has(i)) warmupChecked.delete(i); else warmupChecked.add(i);
+  // Patch DOM directly — no full re-render
+  const check = document.querySelector(`#warmup-item-${i} .warmup-check`);
+  const text  = document.getElementById(`warmup-text-${i}`);
+  const done  = warmupChecked.has(i);
+  if (check) { check.classList.toggle("done", done); check.textContent = done ? "✓" : ""; }
+  if (text)  { text.classList.toggle("struck", done); }
+  // Update progress count
+  const plan = WORKOUT_PLAN[selectedDay];
+  const total = plan?.warmup?.length || 0;
+  const doneCount = warmupChecked.size;
+  const prog = document.querySelector(".warmup-progress");
+  if (prog) prog.textContent = `${doneCount}/${total}${doneCount===total&&total>0?" ✓":""}`;
+  saveDraft();
+}
+
+function editWarmupItem(i) {
+  const plan = WORKOUT_PLAN[selectedDay];
+  const current = warmupCustom[i] !== undefined ? warmupCustom[i] : (plan?.warmup?.[i] || "");
+  const textEl = document.getElementById(`warmup-text-${i}`);
+  if (!textEl) return;
+  // Replace text span with inline input
+  const input = document.createElement("input");
+  input.className = "warmup-custom-input";
+  input.value = current;
+  input.onclick = e => e.stopPropagation();
+  input.onblur = () => {
+    warmupCustom[i] = input.value.trim() || current;
+    textEl.textContent = warmupCustom[i];
+    input.replaceWith(textEl);
+    saveDraft();
+  };
+  input.onkeydown = e => { if (e.key === "Enter") input.blur(); };
+  textEl.replaceWith(input);
+  input.focus();
+  input.select();
 }
 
 // ── Bodyweight toggle ──────────────────────────────────────────
@@ -1394,7 +1621,7 @@ async function saveWorkout() {
         notes:     sessionNotes || existingData.notes,
         volume:    Math.round(mergedVolume),
         period:    periodOn ?? existingData.period,
-        warmup:    warmupComplete,
+        warmup:    [...warmupChecked],
       });
       showToast("✅ Session updated!");
     } else {
@@ -1408,7 +1635,7 @@ async function saveWorkout() {
         notes:     sessionNotes,
         volume:    Math.round(totalVolume),
         period:    periodOn,
-        warmup:    warmupComplete,
+        warmup:    [...warmupChecked],
         timestamp: new Date().toISOString(),
         date:      todayStr,
       });
@@ -1416,8 +1643,8 @@ async function saveWorkout() {
     }
     document.getElementById("session-notes").value = "";
     document.querySelectorAll(".set-complete-btn.done").forEach(b => b.classList.remove("done"));
-    warmupComplete = false;
     bwExercises.clear();
+    clearDraft();
   } catch(e) {
     console.error(e);
     showToast("⚠️ Error saving — check Firebase config");
