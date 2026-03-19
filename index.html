@@ -354,7 +354,9 @@
     .theme-sky .stat-val            { color: var(--sky); }
 
     @media (max-width: 600px) {
-      .sets-config { flex-direction: column; }
+      .sets-config { flex-direction: row; gap: 6px; }
+      .sets-config > div { flex: 1; min-width: 0; }
+      .sets-config select { font-size: 12px; padding: 8px 6px; }
       .cardio-entry-row { flex-direction: column; }
       header { padding: 12px 16px; }
       .tab-panel { padding: 16px; }
