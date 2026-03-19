@@ -1608,13 +1608,26 @@ async function saveWorkout() {
     acc + ex.setData.reduce((a, s) => a + (parseFloat(s.weight)||0)*(parseInt(s.reps)||0), 0), 0);
 
   try {
-    const todayStr = new Date().toLocaleDateString("en-CA");
+    // Calculate the actual calendar date for the selected day
+    // Walk backwards up to 7 days to find when that day last occurred
+    const DAY_NAMES_FULL = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+    function getDateForDay(dayName) {
+      const target = DAY_NAMES_FULL.indexOf(dayName.toLowerCase());
+      if (target === -1) return new Date().toLocaleDateString("en-CA");
+      const d = new Date();
+      for (let i = 0; i < 7; i++) {
+        if (d.getDay() === target) return d.toLocaleDateString("en-CA");
+        d.setDate(d.getDate() - 1);
+      }
+      return new Date().toLocaleDateString("en-CA");
+    }
+    const sessionDate = getDateForDay(selectedDay);
 
     // Check if a session already exists for this user + date + day
     const existing = await getDocs(query(
       collection(db, "workouts"),
       where("user", "==", currentUser),
-      where("date", "==", todayStr),
+      where("date", "==", sessionDate),
       where("day",  "==", selectedDay)
     ));
 
@@ -1674,7 +1687,7 @@ async function saveWorkout() {
         period:    periodOn,
         warmup:    [...warmupChecked],
         timestamp: new Date().toISOString(),
-        date:      todayStr,
+        date:      sessionDate,
       });
       showToast("🎉 Workout saved!");
     }
