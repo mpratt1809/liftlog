@@ -103,7 +103,7 @@
     select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7592' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
     /* ── Day Pills ── */
-    .day-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .day-pills { display: flex; gap: 8px; overflow-x: auto; flex-wrap: nowrap; margin-bottom: 20px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; } .day-pills::-webkit-scrollbar { display: none; }
     .day-pill {
       padding: 8px 16px; border-radius: 100px; font-size: 12px; font-weight: 600;
       letter-spacing: 1px; text-transform: uppercase; border: 1.5px solid var(--border);
@@ -114,6 +114,25 @@
     .day-pill.rest { opacity: 0.5; }
     .day-pill.rest:hover { opacity: 1; }
 
+
+    /* ── Warm-up ── */
+    .warmup-bar { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
+    .warmup-bar:hover { border-color: var(--accent); }
+    .warmup-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--success); transition: all 0.2s; flex-shrink: 0; }
+    .warmup-check.done { background: rgba(46,213,115,0.15); border-color: var(--success); }
+    .warmup-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .warmup-bar.done .warmup-label { color: var(--success); }
+
+    /* ── Drag reorder ── */
+    .drag-handle { cursor: grab; color: var(--muted); font-size: 16px; padding: 4px 6px; flex-shrink: 0; touch-action: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .exercise-block.dragging { opacity: 0.4; border: 2px dashed var(--accent); }
+    .exercise-block.drag-over { border-color: var(--accent2); background: rgba(71,200,255,0.05); }
+
+    /* ── Bodyweight toggle ── */
+    .bw-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .bw-btn { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
+    .bw-btn.active { background: rgba(71,200,255,0.15); border-color: var(--accent2); color: var(--accent2); }
     /* ── Exercise Blocks ── */
     .exercise-block {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
@@ -671,6 +690,8 @@ let cardioCounter   = 0;
 // EXPOSE GLOBALS  (called from inline HTML handlers)
 // ─────────────────────────────────────────────────────────────
 window.toggleHistoryDetail         = toggleHistoryDetail;
+window.toggleWarmup                = toggleWarmup;
+window.toggleBodyweight            = toggleBodyweight;
 window.selectUser              = selectUser;
 window.switchUser              = switchUser;
 window.showTab                 = showTab;
@@ -761,8 +782,16 @@ function buildExercises(day) {
   const plan        = WORKOUT_PLAN[day];
 
   if (plan.rest) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">😴</div><h3>Rest Day</h3><p>Recovery is part of the program</p></div>`;
-    saveSection.style.display = "none";
+    container.innerHTML = `
+      <div class="empty-state"><div class="icon">😴</div><h3>Rest Day</h3><p>Log activities below if you did any!</p></div>`;
+    saveSection.style.display = "block"; // allow saving cardio on rest days
+    periodOn = null;
+    const py = document.getElementById("period-yes");
+    const pn = document.getElementById("period-no");
+    const pd = document.getElementById("period-dot");
+    if(py) py.className="period-btn";
+    if(pn) pn.className="period-btn";
+    if(pd) pd.className="period-indicator";
     return;
   }
 
@@ -785,8 +814,21 @@ function buildExercises(day) {
 function renderExerciseList() {
   const c = document.getElementById("exercises-container");
   c.innerHTML = "";
+
+  // Warm-up bar
+  const warmupDone = c.getAttribute("data-warmup") === "true";
+  const warmupBar = document.createElement("div");
+  warmupBar.className = `warmup-bar${warmupDone?" done":""}`;
+  warmupBar.id = "warmup-bar";
+  warmupBar.innerHTML = `
+    <div class="warmup-check${warmupDone?" done":""}" id="warmup-check">${warmupDone?"✓":""}</div>
+    <span class="warmup-label">🔥 Warm-up complete</span>`;
+  warmupBar.onclick = toggleWarmup;
+  c.appendChild(warmupBar);
+
   activeExercises.forEach((ex, idx) => c.appendChild(buildExerciseBlock(ex, idx)));
   c.appendChild(buildAddPanel());
+  initDragDrop();
 }
 
 function buildExerciseBlock(ex, idx) {
@@ -794,17 +836,26 @@ function buildExerciseBlock(ex, idx) {
   const badgeHTML = ex.skyMod === "caution"
     ? `<span class="ex-badge sky-mod">⚠️ Caution</span>`
     : ex.skyMod === "skip" && !isSky ? `<span class="ex-badge skip">Sky: Skip</span>` : "";
-  const skyHint   = isSky && ex.skyWeight && ex.skyWeight !== "—"
-    ? `<div style="font-size:11px;color:var(--accent2);margin-top:2px;">💙 baseline: ${ex.skyWeight}</div>` : "";
+
+  // Baseline: pull from most recent session for this user
+  const recentWeights = getRecentWeights(ex.name);
+  const baselineHTML = recentWeights
+    ? `<div style="font-size:11px;color:var(--accent2);margin-top:2px;">📊 Last used: ${recentWeights}</div>`
+    : (isSky && ex.skyWeight && ex.skyWeight !== "—"
+      ? `<div style="font-size:11px;color:var(--accent2);margin-top:2px;">💙 baseline: ${ex.skyWeight}</div>`
+      : "");
 
   const wrap = document.createElement("div");
   wrap.className = "exercise-block";
   wrap.id = `ex-${idx}`;
+  wrap.dataset.idx = idx;
+  wrap.draggable = true;
   wrap.innerHTML = `
     <div class="exercise-header">
-      <div>
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <div style="flex:1;min-width:0;">
         <div class="exercise-name">${ex.name} ${badgeHTML}</div>
-        ${skyHint}
+        ${baselineHTML}
       </div>
       <div class="ex-header-right">
         <button class="remove-ex-btn" onclick="removeExercise(${idx})" title="Remove">✕</button>
@@ -825,6 +876,10 @@ function buildExerciseBlock(ex, idx) {
             ${REPS_OPTIONS.map(r => `<option value="${r}" ${r===ex.reps?"selected":""}>${r} reps</option>`).join("")}
           </select>
         </div>
+      </div>
+      <div class="bw-row">
+        <button class="bw-btn" id="bw-btn-${idx}" onclick="toggleBodyweight(${idx})">🏋️ Bodyweight</button>
+        <span style="font-size:11px;color:var(--muted)" id="bw-hint-${idx}"></span>
       </div>
       <div class="set-headers">
         <span>Set</span><span>Weight (lbs)</span><span>Actual Reps</span><span>✓</span>
@@ -1054,13 +1109,16 @@ function rebuildSetRows(idx) {
   const sets = parseInt(document.getElementById(`sets-${idx}`)?.value || 3);
   const c    = document.getElementById(`rows-${idx}`);
   if (!c) return;
+  const isBW = bwExercises.has(idx);
   c.innerHTML = "";
   for (let s = 1; s <= sets; s++) {
     const row = document.createElement("div");
     row.className = "set-row";
     row.innerHTML = `
       <div class="set-num">S${s}</div>
-      <input type="number" inputmode="decimal" id="weight-${idx}-${s}" placeholder="e.g. 80" min="0" step="0.5" />
+      <input type="number" inputmode="decimal" id="weight-${idx}-${s}"
+        placeholder="${isBW?"bodyweight":"e.g. 80"}" min="0" step="0.5"
+        value="${isBW?"":""}" ${isBW?'disabled style="opacity:0.4"':""} />
       <input type="number" id="actualreps-${idx}-${s}" placeholder="reps" min="1" max="50" />
       <button class="set-complete-btn" id="done-${idx}-${s}" onclick="toggleSetDone(${idx},${s})">✓</button>`;
     c.appendChild(row);
@@ -1070,6 +1128,87 @@ function rebuildSetRows(idx) {
 function toggleSetDone(idx, s) {
   document.getElementById(`done-${idx}-${s}`)?.classList.toggle("done");
 }
+
+// ── Warm-up ────────────────────────────────────────────────────
+let warmupComplete = false;
+function toggleWarmup() {
+  warmupComplete = !warmupComplete;
+  const bar   = document.getElementById("warmup-bar");
+  const check = document.getElementById("warmup-check");
+  if (bar)   bar.classList.toggle("done", warmupComplete);
+  if (check) { check.classList.toggle("done", warmupComplete); check.textContent = warmupComplete ? "✓" : ""; }
+}
+
+// ── Bodyweight toggle ──────────────────────────────────────────
+let bwExercises = new Set(); // indexes with bodyweight active
+function toggleBodyweight(idx) {
+  const active = bwExercises.has(idx);
+  if (active) bwExercises.delete(idx); else bwExercises.add(idx);
+  const btn  = document.getElementById(`bw-btn-${idx}`);
+  const hint = document.getElementById(`bw-hint-${idx}`);
+  if (btn) btn.classList.toggle("active", !active);
+  if (hint) hint.textContent = !active ? "Weight inputs disabled" : "";
+  // disable/enable weight inputs
+  const sets = parseInt(document.getElementById(`sets-${idx}`)?.value || 3);
+  for (let s = 1; s <= sets; s++) {
+    const w = document.getElementById(`weight-${idx}-${s}`);
+    if (w) { w.disabled = !active; w.value = !active ? "bodyweight" : ""; w.placeholder = !active ? "bodyweight" : "e.g. 80"; }
+  }
+}
+
+// ── Get most recent weights for an exercise from session history ─
+function getRecentWeights(exName) {
+  // Find most recent session for this user that includes this exercise
+  const sessions = allSessions.filter(s => s.user === currentUser);
+  for (const session of sessions) { // already sorted newest first
+    const ex = (session.exercises||[]).find(e => e.name === exName);
+    if (ex && ex.setData && ex.setData.length) {
+      const weights = ex.setData.map(s => s.weight).filter(w => w && w !== "" && w !== "bodyweight");
+      if (!weights.length) return "bodyweight";
+      const unique = [...new Set(weights)];
+      return unique.length === 1 ? unique[0] + " lbs" : unique[0] + "–" + unique[unique.length-1] + " lbs";
+    }
+  }
+  return null;
+}
+
+// ── Drag and Drop reorder ──────────────────────────────────────
+let dragSrcIdx = null;
+function initDragDrop() {
+  document.querySelectorAll(".exercise-block[draggable]").forEach(el => {
+    el.addEventListener("dragstart", e => {
+      dragSrcIdx = parseInt(el.dataset.idx);
+      el.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    el.addEventListener("dragend", () => {
+      el.classList.remove("dragging");
+      document.querySelectorAll(".exercise-block").forEach(b => b.classList.remove("drag-over"));
+    });
+    el.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      document.querySelectorAll(".exercise-block").forEach(b => b.classList.remove("drag-over"));
+      el.classList.add("drag-over");
+    });
+    el.addEventListener("drop", e => {
+      e.preventDefault();
+      const targetIdx = parseInt(el.dataset.idx);
+      if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+      // Reorder activeExercises
+      const moved = activeExercises.splice(dragSrcIdx, 1)[0];
+      activeExercises.splice(targetIdx, 0, moved);
+      dragSrcIdx = null;
+      renderExerciseList();
+    });
+    // Touch support
+    const handle = el.querySelector(".drag-handle");
+    if (handle) {
+      handle.addEventListener("touchstart", () => { el.draggable = true; }, {passive:true});
+    }
+  });
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // PERIOD TRACKING
@@ -1173,9 +1312,10 @@ async function saveWorkout() {
     const sets  = parseInt(document.getElementById(`sets-${idx}`)?.value  || ex.sets);
     const reps  = parseInt(document.getElementById(`reps-${idx}`)?.value  || ex.reps);
     const notes = document.getElementById(`notes-${idx}`)?.value || "";
+    const isBW  = bwExercises.has(idx);
     const setData = [];
     for (let s = 1; s <= sets; s++) {
-      const weight = document.getElementById(`weight-${idx}-${s}`)?.value || "";
+      const weight = isBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || "");
       const actual = document.getElementById(`actualreps-${idx}-${s}`)?.value || "";
       const done   = document.getElementById(`done-${idx}-${s}`)?.classList.contains("done");
       if (weight || actual) setData.push({ set: s, weight, reps: actual || reps, completed: done });
@@ -1254,6 +1394,7 @@ async function saveWorkout() {
         notes:     sessionNotes || existingData.notes,
         volume:    Math.round(mergedVolume),
         period:    periodOn ?? existingData.period,
+        warmup:    warmupComplete,
       });
       showToast("✅ Session updated!");
     } else {
@@ -1261,12 +1402,13 @@ async function saveWorkout() {
       await addDoc(collection(db, "workouts"), {
         user:      currentUser,
         day:       selectedDay,
-        focus:     plan.focus,
+        focus:     plan?.focus || "Rest Day",
         exercises: loggedExercises,
         cardio:    loggedCardio,
         notes:     sessionNotes,
         volume:    Math.round(totalVolume),
         period:    periodOn,
+        warmup:    warmupComplete,
         timestamp: new Date().toISOString(),
         date:      todayStr,
       });
@@ -1274,6 +1416,8 @@ async function saveWorkout() {
     }
     document.getElementById("session-notes").value = "";
     document.querySelectorAll(".set-complete-btn.done").forEach(b => b.classList.remove("done"));
+    warmupComplete = false;
+    bwExercises.clear();
   } catch(e) {
     console.error(e);
     showToast("⚠️ Error saving — check Firebase config");
