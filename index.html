@@ -1716,6 +1716,12 @@ async function loadHistory(user) {
     allSessions.sort((a,b) => (b.date||"").localeCompare(a.date||""));
     populateHistYears(allSessions);
     applyHistFilters();
+    // Re-render exercises now that allSessions is populated —
+    // fixes race condition where exercises rendered before Firebase loaded history
+    if (selectedDay && user === currentUser) {
+      buildExercises(selectedDay);
+      setTimeout(() => restoreDraft(), 100);
+    }
   } catch(e) {
     list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
   }
