@@ -762,6 +762,10 @@ function selectUser(user) {
   buildDayPills();
   const today = new Date().toLocaleDateString("en-US",{weekday:"long"}).toLowerCase();
   selectDay(GYM_DAYS.includes(today) ? today : "monday");
+
+  // Load history in background so baseline weights populate on Today tab
+  // loadHistory will re-render exercises once allSessions is ready
+  loadHistory(user);
 }
 
 function switchUser() {
@@ -1705,8 +1709,9 @@ async function saveWorkout() {
 // HISTORY
 // ─────────────────────────────────────────────────────────────
 async function loadHistory(user) {
+  const onHistoryTab = document.getElementById("history-list")?.closest(".tab-panel")?.classList.contains("active");
   const list = document.getElementById("history-list");
-  list.innerHTML = `<div class="loading"><div class="spinner"></div> Loading…</div>`;
+  if (onHistoryTab) list.innerHTML = `<div class="loading"><div class="spinner"></div> Loading…</div>`;
   try {
     const snap = await getDocs(query(collection(db,"workouts"), where("user","==",user)));
     allSessions = snap.docs
@@ -1715,7 +1720,7 @@ async function loadHistory(user) {
     // Sort client-side by date string descending (avoids composite index requirement)
     allSessions.sort((a,b) => (b.date||"").localeCompare(a.date||""));
     populateHistYears(allSessions);
-    applyHistFilters();
+    if (onHistoryTab) applyHistFilters();
     // Re-render exercises now that allSessions is populated —
     // fixes race condition where exercises rendered before Firebase loaded history
     if (selectedDay && user === currentUser) {
@@ -1723,7 +1728,7 @@ async function loadHistory(user) {
       setTimeout(() => restoreDraft(), 100);
     }
   } catch(e) {
-    list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
+    if (onHistoryTab) list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
   }
 }
 
