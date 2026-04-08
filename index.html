@@ -1700,24 +1700,9 @@ async function saveWorkout() {
   const sessionFocus = swapFocus || plan?.focus || "Workout";
 
   try {
-    // Calculate the actual calendar date for the selected day
-    // If the selected day IS today, always use today — don't walk back
-    const DAY_NAMES_FULL = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
-    function getDateForDay(dayName) {
-      const target = DAY_NAMES_FULL.indexOf(dayName.toLowerCase());
-      if (target === -1) return new Date().toLocaleDateString("en-CA");
-      const today = new Date();
-      // If selected day is today, use today's date directly
-      if (today.getDay() === target) return today.toLocaleDateString("en-CA");
-      // Otherwise walk back up to 7 days
-      const d = new Date();
-      for (let i = 1; i < 7; i++) {
-        d.setDate(d.getDate() - 1);
-        if (d.getDay() === target) return d.toLocaleDateString("en-CA");
-      }
-      return new Date().toLocaleDateString("en-CA");
-    }
-    const sessionDate = getDateForDay(selectedDay);
+    // Always save to today's actual calendar date regardless of which day tab is selected.
+    // The day tab controls which exercise plan loads, not which date the session is recorded on.
+    const sessionDate = new Date().toLocaleDateString("en-CA");
 
     // Check if a session already exists for this user + date + day
     const existing = await getDocs(query(
