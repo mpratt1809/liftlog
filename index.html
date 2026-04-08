@@ -792,6 +792,7 @@ function buildDayPills() {
 
 function selectDay(day) {
   selectedDay = day;
+  swapFocus   = null;
   warmupChecked = new Set();
   warmupCustom  = {};
   warmupOpen    = true;
@@ -812,20 +813,6 @@ function buildExercises(day) {
   const saveSection = document.getElementById("save-section");
   const plan        = WORKOUT_PLAN[day];
 
-  if (plan.rest) {
-    container.innerHTML = `
-      <div class="empty-state"><div class="icon">😴</div><h3>Rest Day</h3><p>Log activities below if you did any!</p></div>`;
-    saveSection.style.display = "block"; // allow saving cardio on rest days
-    periodOn = null;
-    const py = document.getElementById("period-yes");
-    const pn = document.getElementById("period-no");
-    const pd = document.getElementById("period-dot");
-    if(py) py.className="period-btn";
-    if(pn) pn.className="period-btn";
-    if(pd) pd.className="period-indicator";
-    return;
-  }
-
   periodOn = null;
   const py = document.getElementById("period-yes");
   const pn = document.getElementById("period-no");
@@ -833,6 +820,26 @@ function buildExercises(day) {
   if(py) py.className="period-btn";
   if(pn) pn.className="period-btn";
   if(pd) pd.className="period-indicator";
+
+  if (plan.rest) {
+    // Rest day — still allow full workout logging (swapped days)
+    activeExercises = [];
+    renderExerciseList();
+    saveSection.style.display = "block";
+    // Show a subtle swap notice above exercises
+    const notice = document.createElement("div");
+    notice.id = "swap-notice";
+    notice.style.cssText = "background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.2);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--accent);";
+    notice.innerHTML = `💡 <strong>Rest day</strong> — logging anyway? Pick a focus below or add exercises.
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${["Chest & Triceps","Back & Biceps","Legs","Shoulders","Full Body","Cardio Only"].map(f=>
+          `<button onclick="setSwapFocus('${f}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;color:var(--text);cursor:pointer;font-family:var(--font-body)" id="swapbtn-${f.replace(/\s/g,'-')}">${f}</button>`
+        ).join("")}
+      </div>`;
+    container.insertBefore(notice, container.firstChild);
+    return;
+  }
+
   activeExercises = (currentUser === "sky"
     ? plan.exercises.filter(ex => ex.skyMod !== "skip")
     : plan.exercises
@@ -1050,17 +1057,37 @@ function initExSearch(todayNames, activeNames) {
   if (!input || !results) return;
 
   function buildLibraryList() {
-    // All exercises: today's plan first, then full library
+    // All exercises: today's plan first, then history, then full library
     const all = [];
+    const seen = new Set();
+
     // Today's plan exercises not yet active
     (WORKOUT_PLAN[selectedDay]?.exercises||[]).forEach(e => {
-      if (!activeNames.has(e.name)) all.push({ name: e.name, group: "Today's Plan", ex: e });
+      if (!activeNames.has(e.name) && !seen.has(e.name)) {
+        all.push({ name: e.name, group: "Today's Plan", ex: e });
+        seen.add(e.name);
+      }
     });
+
+    // Previously done exercises from allSessions history
+    allSessions
+      .filter(s => s.user === currentUser)
+      .forEach(session => {
+        (session.exercises || []).forEach(e => {
+          if (!seen.has(e.name) && !activeNames.has(e.name)) {
+            all.push({ name: e.name, group: "Previously Done", ex: null });
+            seen.add(e.name);
+          }
+        });
+      });
+
     // Full library
     Object.entries(EXERCISE_LIBRARY).forEach(([group, names]) => {
       names.forEach(name => {
-        if (!all.find(a=>a.name===name))
+        if (!seen.has(name)) {
           all.push({ name, group, ex: null });
+          seen.add(name);
+        }
       });
     });
     return all;
@@ -1080,8 +1107,8 @@ function initExSearch(todayNames, activeNames) {
       groups[item.group].push(item);
     });
 
-    // Put Today's Plan first
-    const orderedGroups = ["Today's Plan", ...Object.keys(EXERCISE_LIBRARY)];
+    // Put Today's Plan first, then Previously Done, then library groups
+    const orderedGroups = ["Today's Plan", "Previously Done", ...Object.keys(EXERCISE_LIBRARY)];
 
     let html = "";
     let hasAny = false;
@@ -1094,6 +1121,7 @@ function initExSearch(todayNames, activeNames) {
           <div class="ex-result-item" onclick="selectExercise('${item.name.replace(/'/g,"\'")}')">
             ${item.name}
             ${g==="Today's Plan"?'<span class="ex-tag today">TODAY</span>':""}
+            ${g==="Previously Done"?'<span class="ex-tag" style="background:rgba(71,200,255,0.15);color:var(--accent2);font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700">HISTORY</span>':""}
           </div>`).join("")}
       </div>`;
     });
@@ -1141,6 +1169,22 @@ window.confirmAddExercise = function() {
   if (!pendingExName) return showToast("Search and select an exercise first");
   const sets = parseInt(document.getElementById("new-ex-sets")?.value || 3);
   const reps = parseInt(document.getElementById("new-ex-reps")?.value || 10);
+
+  // Save all current form data before re-rendering so nothing gets wiped
+  activeExercises.forEach((ex, i) => {
+    ex._savedSets  = parseInt(document.getElementById(`sets-${i}`)?.value  || ex.sets);
+    ex._savedReps  = parseInt(document.getElementById(`reps-${i}`)?.value  || ex.reps);
+    ex._savedNotes = document.getElementById(`notes-${i}`)?.value || "";
+    ex._savedSetData = [];
+    for (let s = 1; s <= ex._savedSets; s++) {
+      ex._savedSetData.push({
+        weight: document.getElementById(`weight-${i}-${s}`)?.value || "",
+        reps:   document.getElementById(`actualreps-${i}-${s}`)?.value || "",
+        done:   document.getElementById(`done-${i}-${s}`)?.classList.contains("done") || false,
+      });
+    }
+  });
+
   const planEx = Object.values(WORKOUT_PLAN).flatMap(d=>d.exercises||[]).find(e=>e.name===pendingExName);
   activeExercises.push(planEx
     ? {...planEx, sets, reps}
@@ -1148,10 +1192,52 @@ window.confirmAddExercise = function() {
   );
   pendingExName = null;
   renderExerciseList();
+
+  // Restore saved data into rebuilt DOM for all pre-existing exercises
+  setTimeout(() => {
+    activeExercises.forEach((ex, i) => {
+      if (ex._savedSets === undefined) return; // new exercise — skip
+      const setsEl = document.getElementById(`sets-${i}`);
+      if (setsEl) { setsEl.value = ex._savedSets; rebuildSetRows(i); }
+      const repsEl = document.getElementById(`reps-${i}`);
+      if (repsEl) repsEl.value = ex._savedReps;
+      const notesEl = document.getElementById(`notes-${i}`);
+      if (notesEl) notesEl.value = ex._savedNotes;
+      setTimeout(() => {
+        (ex._savedSetData || []).forEach((s, si) => {
+          const w = document.getElementById(`weight-${i}-${si+1}`);
+          const r = document.getElementById(`actualreps-${i}-${si+1}`);
+          const d = document.getElementById(`done-${i}-${si+1}`);
+          if (w) w.value = s.weight;
+          if (r) r.value = s.reps;
+          if (d && s.done) d.classList.add("done");
+        });
+      }, 50);
+    });
+    saveDraft();
+  }, 50);
 };
 
 function addExerciseFromDropdown() {} // kept for compatibility
 function addCustomExercise() {}
+
+let swapFocus = null; // set when working out on a rest day
+
+window.setSwapFocus = function(focus) {
+  swapFocus = focus;
+  // Highlight selected button
+  document.querySelectorAll("[id^='swapbtn-']").forEach(b => {
+    b.style.background = "var(--surface2)";
+    b.style.color = "var(--text)";
+    b.style.borderColor = "var(--border)";
+  });
+  const btn = document.getElementById(`swapbtn-${focus.replace(/\s/g,"-")}`);
+  if (btn) {
+    btn.style.background = "rgba(232,255,71,0.15)";
+    btn.style.color = "var(--accent)";
+    btn.style.borderColor = "rgba(232,255,71,0.4)";
+  }
+};
 
 // ── Draft auto-save / restore ─────────────────────────────────
 const DRAFT_KEY = "liftlog_draft";
@@ -1610,18 +1696,24 @@ async function saveWorkout() {
   const sessionNotes = document.getElementById("session-notes").value;
   const totalVolume  = loggedExercises.reduce((acc, ex) =>
     acc + ex.setData.reduce((a, s) => a + (parseFloat(s.weight)||0)*(parseInt(s.reps)||0), 0), 0);
+  // Use swapFocus if set (working out on a rest day), otherwise use plan focus
+  const sessionFocus = swapFocus || plan?.focus || "Workout";
 
   try {
     // Calculate the actual calendar date for the selected day
-    // Walk backwards up to 7 days to find when that day last occurred
+    // If the selected day IS today, always use today — don't walk back
     const DAY_NAMES_FULL = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
     function getDateForDay(dayName) {
       const target = DAY_NAMES_FULL.indexOf(dayName.toLowerCase());
       if (target === -1) return new Date().toLocaleDateString("en-CA");
+      const today = new Date();
+      // If selected day is today, use today's date directly
+      if (today.getDay() === target) return today.toLocaleDateString("en-CA");
+      // Otherwise walk back up to 7 days
       const d = new Date();
-      for (let i = 0; i < 7; i++) {
-        if (d.getDay() === target) return d.toLocaleDateString("en-CA");
+      for (let i = 1; i < 7; i++) {
         d.setDate(d.getDate() - 1);
+        if (d.getDay() === target) return d.toLocaleDateString("en-CA");
       }
       return new Date().toLocaleDateString("en-CA");
     }
@@ -1683,7 +1775,7 @@ async function saveWorkout() {
       await addDoc(collection(db, "workouts"), {
         user:      currentUser,
         day:       selectedDay,
-        focus:     plan?.focus || "Rest Day",
+        focus:     sessionFocus,
         exercises: loggedExercises,
         cardio:    loggedCardio,
         notes:     sessionNotes,
@@ -1698,6 +1790,7 @@ async function saveWorkout() {
     document.getElementById("session-notes").value = "";
     document.querySelectorAll(".set-complete-btn.done").forEach(b => b.classList.remove("done"));
     bwExercises.clear();
+    swapFocus = null;
     clearDraft();
   } catch(e) {
     console.error(e);
