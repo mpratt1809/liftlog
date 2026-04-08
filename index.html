@@ -821,33 +821,69 @@ function buildExercises(day) {
   if(pn) pn.className="period-btn";
   if(pd) pd.className="period-indicator";
 
-  if (plan.rest) {
-    // Rest day — still allow full workout logging (swapped days)
+  const ALL_FOCUSES = ["Chest & Triceps","Back & Biceps","Legs","Shoulders","Full Body","Cardio Only","Rest / Light"];
+  const isRest = plan.rest;
+
+  if (isRest) {
     activeExercises = [];
     renderExerciseList();
     saveSection.style.display = "block";
-    // Show a subtle swap notice above exercises
-    const notice = document.createElement("div");
-    notice.id = "swap-notice";
-    notice.style.cssText = "background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.2);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--accent);";
-    notice.innerHTML = `💡 <strong>Rest day</strong> — logging anyway? Pick a focus below or add exercises.
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        ${["Chest & Triceps","Back & Biceps","Legs","Shoulders","Full Body","Cardio Only"].map(f=>
-          `<button onclick="setSwapFocus('${f}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;color:var(--text);cursor:pointer;font-family:var(--font-body)" id="swapbtn-${f.replace(/\s/g,'-')}">${f}</button>`
-        ).join("")}
-      </div>`;
-    container.insertBefore(notice, container.firstChild);
-    return;
+  } else {
+    activeExercises = (currentUser === "sky"
+      ? plan.exercises.filter(ex => ex.skyMod !== "skip")
+      : plan.exercises
+    ).map(ex => ({...ex}));
+    renderExerciseList();
+    saveSection.style.display = "block";
   }
 
-  activeExercises = (currentUser === "sky"
-    ? plan.exercises.filter(ex => ex.skyMod !== "skip")
-    : plan.exercises
-  ).map(ex => ({...ex}));
+  // Build focus override notice — prominent on rest days, subtle on gym days
+  const notice = document.createElement("div");
+  notice.id = "swap-notice";
 
-  renderExerciseList();
-  saveSection.style.display = "block";
+  if (isRest) {
+    notice.style.cssText = "background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--accent);";
+    notice.innerHTML = `
+      💡 <strong>Rest day</strong> — logging anyway? Pick a focus below.
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap" id="focus-btn-row">
+        ${ALL_FOCUSES.filter(f=>f!=="Rest / Light").map(f=>focusBtn(f)).join("")}
+      </div>`;
+  } else {
+    notice.style.cssText = "margin-bottom:12px;";
+    notice.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;color:var(--muted)">📅 Focus: <strong style="color:var(--text)">${swapFocus || plan.focus}</strong></span>
+        <button onclick="toggleFocusPicker()" id="focusPickerToggle"
+          style="background:transparent;border:1px solid var(--border);border-radius:7px;padding:3px 10px;
+          font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font-body)">Change ▾</button>
+      </div>
+      <div id="focus-btn-row" style="display:none;margin-top:8px;display:none;flex-wrap:wrap;gap:6px;">
+        ${ALL_FOCUSES.map(f=>focusBtn(f, plan.focus)).join("")}
+      </div>`;
+  }
+
+  container.insertBefore(notice, container.firstChild);
 }
+
+function focusBtn(f, currentFocus) {
+  const isActive = swapFocus === f || (!swapFocus && f === currentFocus);
+  return `<button onclick="setSwapFocus('${f}')"
+    style="background:${isActive?"rgba(232,255,71,0.15)":"var(--surface2)"};
+    border:1px solid ${isActive?"rgba(232,255,71,0.4)":"var(--border)"};
+    border-radius:7px;padding:4px 10px;font-size:11px;
+    color:${isActive?"var(--accent)":"var(--text)"};
+    cursor:pointer;font-family:var(--font-body)"
+    id="swapbtn-${f.replace(/[\s\/]/g,'-')}">${f}</button>`;
+}
+
+window.toggleFocusPicker = function() {
+  const row    = document.getElementById("focus-btn-row");
+  const toggle = document.getElementById("focusPickerToggle");
+  if (!row) return;
+  const open = row.style.display === "flex";
+  row.style.display = open ? "none" : "flex";
+  if (toggle) toggle.textContent = open ? "Change ▾" : "Change ▴";
+};
 
 function renderExerciseList() {
   const c = document.getElementById("exercises-container");
@@ -1223,20 +1259,76 @@ function addCustomExercise() {}
 
 let swapFocus = null; // set when working out on a rest day
 
+// Map focus labels to their source day for exercise loading
+const FOCUS_TO_DAY = {
+  "Chest & Triceps":              "monday",
+  "Back & Biceps":                "tuesday",
+  "Legs":                         "sunday",
+  "Shoulders":                    "thursday",
+  "Full Body":                    null,   // no specific day — keep current or empty
+  "Cardio Only":                  null,
+  "Rest / Light":                 null,
+  "Chest/Tri + Back/Bi (Lighter)":"friday",
+};
+
 window.setSwapFocus = function(focus) {
   swapFocus = focus;
-  // Highlight selected button
-  document.querySelectorAll("[id^='swapbtn-']").forEach(b => {
-    b.style.background = "var(--surface2)";
-    b.style.color = "var(--text)";
-    b.style.borderColor = "var(--border)";
-  });
-  const btn = document.getElementById(`swapbtn-${focus.replace(/\s/g,"-")}`);
-  if (btn) {
-    btn.style.background = "rgba(232,255,71,0.15)";
-    btn.style.color = "var(--accent)";
-    btn.style.borderColor = "rgba(232,255,71,0.4)";
+
+  // Load exercises from the matching day plan if one exists
+  const sourceDay = FOCUS_TO_DAY[focus];
+  if (sourceDay && WORKOUT_PLAN[sourceDay]) {
+    const sourcePlan = WORKOUT_PLAN[sourceDay];
+    activeExercises = (currentUser === "sky"
+      ? sourcePlan.exercises.filter(ex => ex.skyMod !== "skip")
+      : sourcePlan.exercises
+    ).map(ex => ({...ex}));
+    // Load that day's warm-up too
+    warmupChecked = new Set();
+    warmupCustom  = {};
+  } else if (focus === "Cardio Only" || focus === "Rest / Light") {
+    // Clear exercises for cardio/rest
+    activeExercises = [];
+    warmupChecked = new Set();
+    warmupCustom  = {};
   }
+  // "Full Body" keeps whatever exercises are already there
+
+  // Re-render exercise list with new exercises
+  renderExerciseList();
+
+  // Re-inject the focus notice so button highlights update correctly
+  const container = document.getElementById("exercises-container");
+  const existing  = document.getElementById("swap-notice");
+  if (existing) existing.remove();
+
+  const plan   = WORKOUT_PLAN[selectedDay];
+  const notice = document.createElement("div");
+  notice.id    = "swap-notice";
+
+  if (plan.rest) {
+    const ALL_FOCUSES = ["Chest & Triceps","Back & Biceps","Legs","Shoulders","Full Body","Cardio Only","Rest / Light"];
+    notice.style.cssText = "background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--accent);";
+    notice.innerHTML = `
+      💡 <strong>Rest day</strong> — logging anyway? Pick a focus below.
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap" id="focus-btn-row">
+        ${ALL_FOCUSES.filter(f=>f!=="Rest / Light").map(f=>focusBtn(f)).join("")}
+      </div>`;
+  } else {
+    const ALL_FOCUSES = ["Chest & Triceps","Back & Biceps","Legs","Shoulders","Full Body","Cardio Only","Rest / Light"];
+    notice.style.cssText = "margin-bottom:12px;";
+    notice.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;color:var(--muted)">📅 Focus: <strong style="color:var(--accent)">${focus}</strong></span>
+        <button onclick="toggleFocusPicker()" id="focusPickerToggle"
+          style="background:transparent;border:1px solid var(--border);border-radius:7px;padding:3px 10px;
+          font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--font-body)">Change ▾</button>
+      </div>
+      <div id="focus-btn-row" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px;">
+        ${ALL_FOCUSES.map(f=>focusBtn(f, plan.focus)).join("")}
+      </div>`;
+  }
+
+  container.insertBefore(notice, container.firstChild);
 };
 
 // ── Draft auto-save / restore ─────────────────────────────────
@@ -1704,12 +1796,12 @@ async function saveWorkout() {
     // The day tab controls which exercise plan loads, not which date the session is recorded on.
     const sessionDate = new Date().toLocaleDateString("en-CA");
 
-    // Check if a session already exists for this user + date + day
+    // Check if a session already exists for this user + date
+    // (date is always today so we match on date only, not day name)
     const existing = await getDocs(query(
       collection(db, "workouts"),
       where("user", "==", currentUser),
-      where("date", "==", sessionDate),
-      where("day",  "==", selectedDay)
+      where("date", "==", sessionDate)
     ));
 
     if (!existing.empty) {
