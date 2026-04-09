@@ -1843,7 +1843,7 @@ async function saveWorkout() {
         cardio:    mergedCardio,
         notes:     sessionNotes || existingData.notes,
         volume:    Math.round(mergedVolume),
-        period:    periodOn ?? existingData.period,
+        period:    periodOn ?? existingData.period ?? null,
         warmup:    [...warmupChecked],
       });
       showToast("✅ Session updated!");
@@ -1851,16 +1851,16 @@ async function saveWorkout() {
       // No existing session — create new
       await addDoc(collection(db, "workouts"), {
         user:      currentUser,
-        day:       selectedDay,
-        focus:     sessionFocus,
-        exercises: loggedExercises,
-        cardio:    loggedCardio,
-        notes:     sessionNotes,
-        volume:    Math.round(totalVolume),
-        period:    periodOn,
-        warmup:    [...warmupChecked],
+        day:       selectedDay        || "",
+        focus:     sessionFocus       || "",
+        exercises: loggedExercises    || [],
+        cardio:    loggedCardio       || [],
+        notes:     sessionNotes       || "",
+        volume:    Math.round(totalVolume) || 0,
+        period:    periodOn           ?? null,
+        warmup:    [...warmupChecked] || [],
         timestamp: new Date().toISOString(),
-        date:      sessionDate,
+        date:      sessionDate        || "",
       });
       showToast("🎉 Workout saved!");
     }
