@@ -141,10 +141,9 @@
     .reorder-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(71,200,255,0.08); }
     .reorder-btn:disabled { opacity: 0.2; cursor: default; }
 
-    /* ── Bodyweight toggle ── */
-    .bw-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .bw-btn { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
-    .bw-btn.active { background: rgba(71,200,255,0.15); border-color: var(--accent2); color: var(--accent2); }
+    /* ── Bodyweight toggle (per-set) ── */
+    .set-bw-btn { font-size: 10px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-body); transition: all 0.2s; white-space: nowrap; }
+    .set-bw-btn.active { background: rgba(71,200,255,0.15); border-color: var(--accent2); color: var(--accent2); }
     /* ── Exercise Blocks ── */
     .exercise-block {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
@@ -171,9 +170,9 @@
     .sets-config > div { flex: 1; min-width: 0; }
 
     /* ── Set Rows ── */
-    .set-headers { display: grid; grid-template-columns: 40px 1fr 1fr 34px; gap: 8px; margin-bottom: 6px; }
+    .set-headers { display: grid; grid-template-columns: 40px 1fr 60px 1fr 34px; gap: 8px; margin-bottom: 6px; }
     .set-headers span { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); text-align: center; }
-    .set-row { display: grid; grid-template-columns: 40px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; animation: slideIn 0.2s ease; }
+    .set-row { display: grid; grid-template-columns: 40px 1fr 60px 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; animation: slideIn 0.2s ease; }
     .set-num { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: center; background: var(--border); border-radius: 6px; padding: 8px 4px; }
     .set-row input { padding: 8px 10px; font-size: 14px; }
     .set-complete-btn {
@@ -711,6 +710,7 @@ window.toggleWarmupItem            = toggleWarmupItem;
 window.toggleWarmupSection         = toggleWarmupSection;
 window.editWarmupItem              = editWarmupItem;
 window.toggleBodyweight            = toggleBodyweight;
+window.toggleSetBW                 = toggleSetBW;
 window.saveDraft                   = saveDraft;
 window.moveExercise                = moveExercise;
 window.selectUser              = selectUser;
@@ -978,12 +978,8 @@ function buildExerciseBlock(ex, idx) {
           </select>
         </div>
       </div>
-      <div class="bw-row">
-        <button class="bw-btn" id="bw-btn-${idx}" onclick="toggleBodyweight(${idx})">🏋️ Bodyweight</button>
-        <span style="font-size:11px;color:var(--muted)" id="bw-hint-${idx}"></span>
-      </div>
       <div class="set-headers">
-        <span>Set</span><span>Weight (lbs)</span><span>Actual Reps</span><span>✓</span>
+        <span>Set</span><span>Weight (lbs)</span><span>BW</span><span>Actual Reps</span><span>✓</span>
       </div>
       <div class="set-rows" id="rows-${idx}"></div>
       <div class="notes-field">
@@ -1341,16 +1337,16 @@ function saveDraft() {
     const sets  = parseInt(document.getElementById(`sets-${idx}`)?.value || ex.sets);
     const reps  = parseInt(document.getElementById(`reps-${idx}`)?.value || ex.reps);
     const notes = document.getElementById(`notes-${idx}`)?.value || "";
-    const isBW  = bwExercises.has(idx);
     const setData = [];
     for (let s = 1; s <= sets; s++) {
+      const isSetBW = bwExercises.has(`${idx}-${s}`);
       setData.push({
-        weight: isBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || ""),
+        weight: isSetBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || ""),
         reps:   document.getElementById(`actualreps-${idx}-${s}`)?.value || "",
         done:   document.getElementById(`done-${idx}-${s}`)?.classList.contains("done") || false,
       });
     }
-    return { name: ex.name, sets, reps, notes, isBW, setData, skyMod: ex.skyMod, skyWeight: ex.skyWeight };
+    return { name: ex.name, sets, reps, notes, setData, skyMod: ex.skyMod, skyWeight: ex.skyWeight };
   });
 
   const draft = {
@@ -1362,7 +1358,7 @@ function saveDraft() {
     warmupCustom,
     warmupOpen,
     notes:        document.getElementById("session-notes")?.value || "",
-    bwExercises:  [...bwExercises],
+    bwSets:       [...bwExercises],
   };
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(e) {}
 }
@@ -1387,7 +1383,7 @@ function restoreDraft() {
 
     // Restore exercises
     bwExercises.clear();
-    (draft.bwExercises || []).forEach(i => bwExercises.add(i));
+    (draft.bwSets || draft.bwExercises || []).forEach(k => bwExercises.add(k));
     activeExercises = draft.exercises.map(e => ({
       name: e.name, sets: e.sets, reps: e.reps,
       skyMod: e.skyMod, skyWeight: e.skyWeight
@@ -1398,8 +1394,8 @@ function restoreDraft() {
     // Restore input values after DOM is built
     setTimeout(() => {
       draft.exercises.forEach((ex, idx) => {
-        const setsEl = document.getElementById(`sets-${idx}`);
-        const repsEl = document.getElementById(`reps-${idx}`);
+        const setsEl  = document.getElementById(`sets-${idx}`);
+        const repsEl  = document.getElementById(`reps-${idx}`);
         const notesEl = document.getElementById(`notes-${idx}`);
         if (setsEl) setsEl.value = ex.sets;
         if (repsEl) repsEl.value = ex.reps;
@@ -1408,10 +1404,12 @@ function restoreDraft() {
         rebuildSetRows(idx);
         setTimeout(() => {
           ex.setData.forEach((s, si) => {
-            const w = document.getElementById(`weight-${idx}-${si+1}`);
-            const r = document.getElementById(`actualreps-${idx}-${si+1}`);
-            const d = document.getElementById(`done-${idx}-${si+1}`);
-            if (w && !ex.isBW) w.value = s.weight;
+            const setNum  = si + 1;
+            const isSetBW = bwExercises.has(`${idx}-${setNum}`);
+            const w = document.getElementById(`weight-${idx}-${setNum}`);
+            const r = document.getElementById(`actualreps-${idx}-${setNum}`);
+            const d = document.getElementById(`done-${idx}-${setNum}`);
+            if (w && !isSetBW) w.value = s.weight;
             if (r) r.value = s.reps;
             if (d && s.done) d.classList.add("done");
           });
@@ -1440,9 +1438,14 @@ function removeExercise(idx) {
       });
     }
   });
-  // Also save bw state
+  // Remap per-set BW keys after exercise removal
   const newBW = new Set();
-  bwExercises.forEach(i => { if (i < idx) newBW.add(i); else if (i > idx) newBW.add(i-1); });
+  bwExercises.forEach(key => {
+    const [exIdx, setNum] = key.split("-").map(Number);
+    if (exIdx < idx) newBW.add(key);           // before removed — keep as-is
+    else if (exIdx > idx) newBW.add(`${exIdx-1}-${setNum}`); // after removed — shift down
+    // exIdx === idx: removed, discard
+  });
   bwExercises = newBW;
 
   activeExercises.splice(idx, 1);
@@ -1482,17 +1485,19 @@ function rebuildSetRows(idx) {
   const sets = parseInt(document.getElementById(`sets-${idx}`)?.value || 3);
   const c    = document.getElementById(`rows-${idx}`);
   if (!c) return;
-  const isBW = bwExercises.has(idx);
   c.innerHTML = "";
   for (let s = 1; s <= sets; s++) {
-    const row = document.createElement("div");
+    const isBW = bwExercises.has(`${idx}-${s}`);
+    const row  = document.createElement("div");
     row.className = "set-row";
     row.innerHTML = `
       <div class="set-num">S${s}</div>
       <input type="number" inputmode="decimal" id="weight-${idx}-${s}"
-        placeholder="${isBW?"bodyweight":"e.g. 80"}" min="0" step="0.5"
-        value="${isBW?"":""}" ${isBW?'disabled style="opacity:0.4"':""}
+        placeholder="${isBW?"BW":"e.g. 80"}" min="0" step="0.5"
+        ${isBW?'disabled style="opacity:0.35"':""}
         oninput="saveDraft()" />
+      <button class="set-bw-btn${isBW?" active":""}" id="bw-${idx}-${s}"
+        onclick="toggleSetBW(${idx},${s})">BW</button>
       <input type="number" id="actualreps-${idx}-${s}" placeholder="reps" min="1" max="50"
         oninput="saveDraft()" />
       <button class="set-complete-btn" id="done-${idx}-${s}" onclick="toggleSetDone(${idx},${s})">✓</button>`;
@@ -1554,22 +1559,28 @@ function editWarmupItem(i) {
   input.select();
 }
 
-// ── Bodyweight toggle ──────────────────────────────────────────
-let bwExercises = new Set(); // indexes with bodyweight active
-function toggleBodyweight(idx) {
-  const active = bwExercises.has(idx);
-  if (active) bwExercises.delete(idx); else bwExercises.add(idx);
-  const btn  = document.getElementById(`bw-btn-${idx}`);
-  const hint = document.getElementById(`bw-hint-${idx}`);
-  if (btn) btn.classList.toggle("active", !active);
-  if (hint) hint.textContent = !active ? "Weight inputs disabled" : "";
-  // disable/enable weight inputs
-  const sets = parseInt(document.getElementById(`sets-${idx}`)?.value || 3);
-  for (let s = 1; s <= sets; s++) {
-    const w = document.getElementById(`weight-${idx}-${s}`);
-    if (w) { w.disabled = !active; w.value = !active ? "bodyweight" : ""; w.placeholder = !active ? "bodyweight" : "e.g. 80"; }
+// ── Per-set bodyweight toggle ──────────────────────────────────
+let bwExercises = new Set(); // keys: "idx-set" e.g. "0-1", "0-2"
+
+function toggleSetBW(idx, s) {
+  const key    = `${idx}-${s}`;
+  const isBW   = bwExercises.has(key);
+  const nowBW  = !isBW;
+  if (nowBW) bwExercises.add(key); else bwExercises.delete(key);
+  const btn    = document.getElementById(`bw-${idx}-${s}`);
+  const weight = document.getElementById(`weight-${idx}-${s}`);
+  if (btn)    btn.classList.toggle("active", nowBW);
+  if (weight) {
+    weight.disabled    = nowBW;
+    weight.placeholder = nowBW ? "BW" : "e.g. 80";
+    weight.style.opacity = nowBW ? "0.35" : "1";
+    if (nowBW) weight.value = "";
   }
+  saveDraft();
 }
+
+// Keep toggleBodyweight as no-op for any legacy references
+function toggleBodyweight() {}
 
 // ── Get most recent weights for an exercise from session history ─
 function getRecentWeights(exName) {
@@ -1608,12 +1619,13 @@ function moveExercise(idx, dir) {
     }
   });
 
-  // Update bwExercises to match new indexes
+  // Update per-set BW keys to match swapped indexes
   const newBW = new Set();
-  bwExercises.forEach(i => {
-    if (i === idx)    newBW.add(newIdx);
-    else if (i === newIdx) newBW.add(idx);
-    else newBW.add(i);
+  bwExercises.forEach(key => {
+    const [exIdx, setNum] = key.split("-").map(Number);
+    if (exIdx === idx)    newBW.add(`${newIdx}-${setNum}`);
+    else if (exIdx === newIdx) newBW.add(`${idx}-${setNum}`);
+    else newBW.add(key);
   });
   bwExercises = newBW;
 
@@ -1758,12 +1770,12 @@ async function saveWorkout() {
     const sets  = parseInt(document.getElementById(`sets-${idx}`)?.value  || ex.sets);
     const reps  = parseInt(document.getElementById(`reps-${idx}`)?.value  || ex.reps);
     const notes = document.getElementById(`notes-${idx}`)?.value || "";
-    const isBW  = bwExercises.has(idx);
     const setData = [];
     for (let s = 1; s <= sets; s++) {
-      const weight = isBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || "");
-      const actual = document.getElementById(`actualreps-${idx}-${s}`)?.value || "";
-      const done   = document.getElementById(`done-${idx}-${s}`)?.classList.contains("done");
+      const isSetBW = bwExercises.has(`${idx}-${s}`);
+      const weight  = isSetBW ? "bodyweight" : (document.getElementById(`weight-${idx}-${s}`)?.value || "");
+      const actual  = document.getElementById(`actualreps-${idx}-${s}`)?.value || "";
+      const done    = document.getElementById(`done-${idx}-${s}`)?.classList.contains("done");
       if (weight || actual) setData.push({ set: s, weight, reps: actual || reps, completed: done });
     }
     if (setData.length) loggedExercises.push({ name: ex.name, sets, reps, setData, notes });
