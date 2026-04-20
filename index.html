@@ -317,6 +317,25 @@
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state h3 { font-family: var(--font-head); font-size: 24px; letter-spacing: 2px; color: var(--text); margin-bottom: 8px; }
 
+    /* ── Deload styles ── */
+    .deload-suggestion { background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,146,60,0.08)); border:1px solid rgba(251,191,36,0.3); border-radius:14px; padding:16px; display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+    .deload-suggest-icon { font-size:28px; flex-shrink:0; }
+    .deload-suggest-body { flex:1; min-width:180px; }
+    .deload-suggest-title { font-size:15px; font-weight:800; color:#fbbf24; margin-bottom:4px; }
+    .deload-suggest-sub { font-size:12px; color:var(--muted); line-height:1.6; }
+    .deload-suggest-actions { display:flex; gap:8px; margin-top:8px; width:100%; }
+    .deload-btn-yes { flex:1; padding:10px; border-radius:10px; border:none; background:#fbbf24; color:#0d0f14; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font-body); }
+    .deload-btn-no  { padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-body); }
+    .deload-active-bar { background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(251,146,60,0.06)); border:1px solid rgba(251,191,36,0.25); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:12px; }
+    .deload-active-icon { font-size:22px; flex-shrink:0; }
+    .deload-active-body { flex:1; display:flex; flex-direction:column; gap:2px; }
+    .deload-active-body strong { font-size:13px; color:#fbbf24; }
+    .deload-active-body span { font-size:11px; color:var(--muted); }
+    .deload-end-btn { padding:8px 14px; border-radius:8px; border:1px solid rgba(251,191,36,0.3); background:transparent; color:#fbbf24; font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; }
+    .deload-weight-hint { font-size:11px; color:#fbbf24; margin-top:2px; font-weight:600; }
+    .exercise-block.deload-mode { border-color: rgba(251,191,36,0.2); }
+    .exercise-block.deload-mode .exercise-header { background: rgba(251,191,36,0.04); }
+
     /* ── Period Toggle ── */
     .period-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 16px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; }
     .period-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
@@ -416,6 +435,8 @@
       <div id="day-focus" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
     </div>
 
+    <div id="deload-banner" style="display:none;margin-bottom:12px;"></div>
+
     <div id="exercises-container"></div>
     <div id="cardio-container"></div>
 
@@ -457,6 +478,14 @@
       <div class="stat-card"><div class="stat-val" id="stat-this-week">–</div><div class="stat-label">This Week</div></div>
       <div class="stat-card"><div class="stat-val" id="stat-volume">–</div><div class="stat-label">Total Volume</div></div>
       <div class="stat-card"><div class="stat-val" id="stat-sauna">–</div><div class="stat-label">🧖 Sauna Mins</div></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <button onclick="toggleDeload()" id="deload-toggle-btn"
+        style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface);
+               color:var(--muted);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;
+               display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
+        🏖 Toggle Deload Week
+      </button>
     </div>
     <div class="chart-controls" style="margin-bottom:12px;gap:8px;align-items:center;">
       <select id="hist-year-select" onchange="applyHistFilters()" style="flex:1;min-width:90px;">
@@ -710,6 +739,225 @@ let cardioEntries   = [];   // [{id, ...}]
 let cardioCounter   = 0;
 
 // ─────────────────────────────────────────────────────────────
+// DELOAD STATE
+// ─────────────────────────────────────────────────────────────
+let deloadState = {
+  active:    false,   // is a deload week currently active?
+  startDate: null,    // ISO date string of the Sunday it started
+  endDate:   null,    // ISO date string of the Saturday it ends
+  suggested: false,   // has a suggestion been shown this week?
+};
+
+function getDeloadWeightTarget(exName) {
+  // Returns 60% of last logged weight as a suggestion string, or null
+  const sessions = allSessions.filter(s => s.user === currentUser);
+  for (const session of sessions) {
+    if (deloadState.active && session.date >= deloadState.startDate) continue; // skip deload sessions
+    const ex = (session.exercises||[]).find(e => e.name === exName);
+    if (ex && ex.setData && ex.setData.length) {
+      const weights = ex.setData
+        .map(s => parseFloat(s.weight))
+        .filter(w => !isNaN(w) && w > 0);
+      if (!weights.length) return null;
+      const max = Math.max(...weights);
+      const target = Math.round(max * 0.6 / 2.5) * 2.5; // round to nearest 2.5
+      return target + " lbs (60%)";
+    }
+  }
+  return null;
+}
+
+function getDeloadSets(normalSets) {
+  // Drop sets: 4→2, 3→2, 2→2
+  if (normalSets >= 4) return 2;
+  if (normalSets === 3) return 2;
+  return 2;
+}
+
+async function loadDeloadState() {
+  try {
+    const snap = await getDocs(query(collection(db,"deload"), where("id","==","shared")));
+    if (!snap.empty) {
+      const data = snap.docs[0].data();
+      deloadState = { ...deloadState, ...data };
+      // Check if deload week has naturally expired (past Saturday end date)
+      const today = new Date().toLocaleDateString("en-CA");
+      if (deloadState.active && deloadState.endDate && today > deloadState.endDate) {
+        deloadState.active    = false;
+        deloadState.suggested = false;
+        await saveDeloadState();
+      }
+    }
+  } catch(e) { console.warn("Deload state load failed:", e); }
+}
+
+async function saveDeloadState() {
+  try {
+    const snap = await getDocs(query(collection(db,"deload"), where("id","==","shared")));
+    if (!snap.empty) {
+      await setDoc(doc(db,"deload",snap.docs[0].id), { ...deloadState, id:"shared" });
+    } else {
+      await addDoc(collection(db,"deload"), { ...deloadState, id:"shared" });
+    }
+  } catch(e) { console.warn("Deload state save failed:", e); }
+}
+
+function getNextSunday() {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun
+  if (day === 0) {
+    // Today is Sunday — start this Sunday if before noon, else next Sunday
+    if (d.getHours() < 12) return d.toLocaleDateString("en-CA");
+  }
+  d.setDate(d.getDate() + (7 - day));
+  return d.toLocaleDateString("en-CA");
+}
+
+function getDeloadEndDate(startDateStr) {
+  // Always Sun→Sat (6 days after start)
+  const d = new Date(startDateStr + "T12:00:00");
+  d.setDate(d.getDate() + 6);
+  return d.toLocaleDateString("en-CA");
+}
+
+function checkDeloadSuggestion() {
+  if (deloadState.active || deloadState.suggested) return;
+
+  // Count weeks with 3+ gym days in the last 5 weeks
+  const today = new Date();
+  const userSessions = allSessions.filter(s => s.user === "sky" || s.user === "meagan");
+
+  // Build set of weeks with 3+ training days (use sky's data as reference)
+  const skySessions = allSessions.filter(s => s.user === "sky");
+  const weekMap = {}; // weekStart → Set of dates
+
+  skySessions.forEach(s => {
+    if (!s.date) return;
+    const d = new Date(s.date + "T12:00:00");
+    // Skip cardio-only sessions
+    if ((!s.exercises || !s.exercises.length) && s.focus?.includes("Cardio")) return;
+    const sunday = new Date(d);
+    sunday.setDate(d.getDate() - d.getDay());
+    const weekKey = sunday.toLocaleDateString("en-CA");
+    if (!weekMap[weekKey]) weekMap[weekKey] = new Set();
+    weekMap[weekKey].add(s.date);
+  });
+
+  // Get last 5 weeks sorted desc
+  const recentWeeks = Object.entries(weekMap)
+    .filter(([week]) => {
+      const d = new Date(week + "T12:00:00");
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 35);
+      return d >= cutoff;
+    })
+    .sort((a,b) => b[0].localeCompare(a[0]));
+
+  // Count consecutive full weeks (3+ gym days) excluding current partial week
+  const thisWeekStart = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    return d.toLocaleDateString("en-CA");
+  })();
+
+  let consecutiveFullWeeks = 0;
+  for (const [week, dates] of recentWeeks) {
+    if (week === thisWeekStart) continue; // skip current week
+    if (dates.size >= 3) consecutiveFullWeeks++;
+    else break;
+  }
+
+  if (consecutiveFullWeeks >= 3) {
+    showDeloadSuggestion();
+  }
+}
+
+function showDeloadSuggestion() {
+  const nextSun = getNextSunday();
+  const endDate = getDeloadEndDate(nextSun);
+  const nextSunFmt = new Date(nextSun + "T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  const endFmt    = new Date(endDate  + "T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+
+  const banner = document.getElementById("deload-banner");
+  if (!banner) return;
+  banner.innerHTML = `
+    <div class="deload-suggestion">
+      <div class="deload-suggest-icon">💪</div>
+      <div class="deload-suggest-body">
+        <div class="deload-suggest-title">Time for a Deload Week!</div>
+        <div class="deload-suggest-sub">You've trained hard for 3+ weeks. A deload week (${nextSunFmt}–${endFmt}) will help your body recover and come back stronger.</div>
+      </div>
+      <div class="deload-suggest-actions">
+        <button class="deload-btn-yes" onclick="confirmDeload('${nextSun}')">Let's Do It</button>
+        <button class="deload-btn-no"  onclick="dismissDeload()">Skip</button>
+      </div>
+    </div>`;
+  banner.style.display = "block";
+}
+
+window.confirmDeload = async function(startDate) {
+  const endDate = getDeloadEndDate(startDate);
+  deloadState = { active: true, startDate, endDate, suggested: true, id: "shared" };
+  await saveDeloadState();
+  renderDeloadBanner();
+  if (selectedDay) selectDay(selectedDay); // re-render exercises with deload mode
+  showToast("🏖 Deload week set! " + startDate + " → " + endDate);
+};
+
+window.dismissDeload = async function() {
+  deloadState.suggested = true;
+  await saveDeloadState();
+  document.getElementById("deload-banner").style.display = "none";
+};
+
+window.toggleDeload = async function() {
+  if (deloadState.active) {
+    // Turn off deload
+    deloadState = { active: false, startDate: null, endDate: null, suggested: false, id: "shared" };
+    await saveDeloadState();
+    renderDeloadBanner();
+    if (selectedDay) selectDay(selectedDay);
+    showToast("✅ Back to normal training!");
+  } else {
+    // Turn on deload starting next Sunday
+    const startDate = getNextSunday();
+    await confirmDeload(startDate);
+  }
+};
+
+function renderDeloadBanner() {
+  const banner = document.getElementById("deload-banner");
+  const toggleBtn = document.getElementById("deload-toggle-btn");
+  if (!banner) return;
+
+  if (deloadState.active) {
+    const endFmt = new Date(deloadState.endDate + "T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    banner.innerHTML = `
+      <div class="deload-active-bar">
+        <span class="deload-active-icon">🏖</span>
+        <div class="deload-active-body">
+          <strong>Deload Week Active</strong>
+          <span>Reduced weights & sets through ${endFmt}. Listen to your body.</span>
+        </div>
+        <button class="deload-end-btn" onclick="toggleDeload()">End Early</button>
+      </div>`;
+    banner.style.display = "block";
+    if (toggleBtn) {
+      toggleBtn.textContent = "✅ Deload Week Active — Tap to End";
+      toggleBtn.style.borderColor = "#fbbf24";
+      toggleBtn.style.color = "#fbbf24";
+    }
+  } else {
+    banner.innerHTML = "";
+    banner.style.display = "none";
+    if (toggleBtn) {
+      toggleBtn.textContent = "🏖 Toggle Deload Week";
+      toggleBtn.style.borderColor = "";
+      toggleBtn.style.color = "";
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // EXPOSE GLOBALS  (called from inline HTML handlers)
 // ─────────────────────────────────────────────────────────────
 window.toggleHistoryDetail         = toggleHistoryDetail;
@@ -727,6 +975,9 @@ window.setHistUser             = setHistUser;
 window.setChartUser            = setChartUser;
 window.setPRUser               = setPRUser;
 window.saveWorkout             = saveWorkout;
+window.toggleDeload            = toggleDeload;
+window.confirmDeload           = confirmDeload;
+window.dismissDeload           = dismissDeload;
 window.renderProgressionChart  = renderProgressionChart;
 window.onProgMuscleChange      = onProgMuscleChange;
 window.setProgRange            = setProgRange;
@@ -774,9 +1025,11 @@ function selectUser(user) {
   const dateField = document.getElementById("session-date");
   if (dateField) dateField.value = new Date().toLocaleDateString("en-CA");
 
-  // Load history in background so baseline weights populate on Today tab
-  // loadHistory will re-render exercises once allSessions is ready
-  loadHistory(user);
+  // Load deload state first, then history
+  loadDeloadState().then(() => {
+    renderDeloadBanner();
+    loadHistory(user);
+  });
 }
 
 function switchUser() {
@@ -952,11 +1205,24 @@ function buildExerciseBlock(ex, idx) {
       ? `<div style="font-size:11px;color:var(--accent2);margin-top:2px;">💙 baseline: ${ex.skyWeight}</div>`
       : "");
 
+  // Deload weight hint
+  const deloadHint = deloadState.active
+    ? (() => {
+        const target = getDeloadWeightTarget(ex.name);
+        return target
+          ? `<div class="deload-weight-hint">🏖 Deload target: ~${target}</div>`
+          : `<div class="deload-weight-hint">🏖 Deload — go lighter today</div>`;
+      })()
+    : "";
+
+  // Deload sets (reduced)
+  const displaySets = deloadState.active ? getDeloadSets(ex.sets) : ex.sets;
+
   const isFirst = idx === 0;
   const isLast  = idx === activeExercises.length - 1;
 
   const wrap = document.createElement("div");
-  wrap.className = "exercise-block";
+  wrap.className = "exercise-block" + (deloadState.active ? " deload-mode" : "");
   wrap.id = `ex-${idx}`;
   wrap.dataset.idx = idx;
   wrap.innerHTML = `
@@ -968,6 +1234,7 @@ function buildExerciseBlock(ex, idx) {
       <div style="flex:1;min-width:0;">
         <div class="exercise-name">${ex.name} ${badgeHTML}</div>
         ${baselineHTML}
+        ${deloadHint}
       </div>
       <div class="ex-header-right">
         <button class="remove-ex-btn" onclick="removeExercise(${idx})" title="Remove">✕</button>
@@ -977,9 +1244,9 @@ function buildExerciseBlock(ex, idx) {
     <div class="exercise-body" id="body-${idx}">
       <div class="sets-config">
         <div>
-          <label>Sets</label>
+          <label>Sets${deloadState.active?" (deload)":""}</label>
           <select id="sets-${idx}" onchange="rebuildSetRows(${idx})">
-            ${SETS_OPTIONS.map(s => `<option value="${s}" ${s===ex.sets?"selected":""}>${s} sets</option>`).join("")}
+            ${SETS_OPTIONS.map(s => `<option value="${s}" ${s===displaySets?"selected":""}>${s} sets${deloadState.active&&s===displaySets?" ← deload":""}</option>`).join("")}
           </select>
         </div>
         <div>
@@ -1902,6 +2169,8 @@ async function loadHistory(user) {
       buildExercises(selectedDay);
       setTimeout(() => restoreDraft(), 100);
     }
+    // Check if a deload suggestion should be shown (only after sessions are loaded)
+    if (user === "sky") checkDeloadSuggestion();
   } catch(e) {
     if (onHistoryTab) list.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load</h3><p>${e.message}</p></div>`;
   }
