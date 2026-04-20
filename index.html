@@ -432,6 +432,13 @@
         <label>Session Notes (optional)</label>
         <textarea id="session-notes" placeholder="How did it feel? Any PRs? Energy level?"></textarea>
       </div>
+      <div class="notes-field" style="margin-bottom:16px;">
+        <label style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📅 Workout Date</span>
+          <span style="font-size:11px;color:var(--muted);font-weight:400">Change if logging a past session</span>
+        </label>
+        <input type="date" id="session-date" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);font-family:var(--font-body);outline:none;"/>
+      </div>
       <button class="btn-primary" onclick="saveWorkout()">💾 SAVE WORKOUT</button>
     </div>
   </div>
@@ -762,6 +769,10 @@ function selectUser(user) {
   buildDayPills();
   const today = new Date().toLocaleDateString("en-US",{weekday:"long"}).toLowerCase();
   selectDay(GYM_DAYS.includes(today) ? today : "monday");
+
+  // Set date field to today
+  const dateField = document.getElementById("session-date");
+  if (dateField) dateField.value = new Date().toLocaleDateString("en-CA");
 
   // Load history in background so baseline weights populate on Today tab
   // loadHistory will re-render exercises once allSessions is ready
@@ -1796,86 +1807,68 @@ async function saveWorkout() {
   if (!loggedExercises.length && !loggedCardio.length)
     return showToast("Log at least one exercise or activity first");
 
-  const plan        = WORKOUT_PLAN[selectedDay];
+  const plan         = WORKOUT_PLAN[selectedDay];
   const sessionNotes = document.getElementById("session-notes").value;
   const totalVolume  = loggedExercises.reduce((acc, ex) =>
     acc + ex.setData.reduce((a, s) => a + (parseFloat(s.weight)||0)*(parseInt(s.reps)||0), 0), 0);
-  // Use swapFocus if set (working out on a rest day), otherwise use plan focus
-  const sessionFocus = swapFocus || plan?.focus || "Workout";
+
+  // Derive focus from what was actually logged, not just the day plan
+  let sessionFocus;
+  if (swapFocus) {
+    sessionFocus = swapFocus;
+  } else if (!loggedExercises.length && loggedCardio.length) {
+    sessionFocus = "Cardio Only";
+  } else {
+    sessionFocus = plan?.focus || "Workout";
+  }
+
+  // Use the date the user selected in the date picker (defaults to today)
+  const sessionDate = document.getElementById("session-date")?.value
+    || new Date().toLocaleDateString("en-CA");
 
   try {
-    // Always save to today's actual calendar date regardless of which day tab is selected.
-    // The day tab controls which exercise plan loads, not which date the session is recorded on.
-    const sessionDate = new Date().toLocaleDateString("en-CA");
-
-    // Check if a session already exists for this user + date
-    // (date is always today so we match on date only, not day name)
+    // Duplicate check: same user + date + day (so Shoulders Thu and Chest Fri on same date are separate docs)
     const existing = await getDocs(query(
       collection(db, "workouts"),
       where("user", "==", currentUser),
-      where("date", "==", sessionDate)
+      where("date", "==", sessionDate),
+      where("day",  "==", selectedDay)
     ));
 
     if (!existing.empty) {
-      // Merge into existing record — add any new exercises/sets, don't overwrite existing ones
+      // Same user + date + day already exists — this is a re-save of the same session.
+      // Overwrite it (don't silently merge — user is intentionally re-saving).
       const existingDoc  = existing.docs[0];
       const existingData = existingDoc.data();
-
-      // Merge exercises: for each logged exercise, if it already exists merge new sets, else append
-      const mergedExercises = [...(existingData.exercises || [])];
-      loggedExercises.forEach(newEx => {
-        const idx = mergedExercises.findIndex(e => e.name === newEx.name);
-        if (idx >= 0) {
-          // Merge sets — add sets that don't already exist (by set number)
-          const existingSets = mergedExercises[idx].setData || [];
-          const existingSetNums = new Set(existingSets.map(s => s.set));
-          const newSets = newEx.setData.filter(s => !existingSetNums.has(s.set));
-          mergedExercises[idx] = {
-            ...mergedExercises[idx],
-            setData: [...existingSets, ...newSets],
-            notes: newEx.notes || mergedExercises[idx].notes,
-          };
-        } else {
-          mergedExercises.push(newEx);
-        }
-      });
-
-      // Merge cardio — append entries that aren't already there (by activity name)
-      const existingCardio   = existingData.cardio || [];
-      const existingActivities = new Set(existingCardio.map(c => c.activity));
-      const newCardio = loggedCardio.filter(c => !existingActivities.has(c.activity));
-      const mergedCardio = [...existingCardio, ...newCardio];
-
-      const mergedVolume = mergedExercises.reduce((acc, ex) =>
-        acc + (ex.setData||[]).reduce((a, s) => a + (parseFloat(s.weight)||0)*(parseInt(s.reps)||0), 0), 0);
-
       await setDoc(doc(db, "workouts", existingDoc.id), {
         ...existingData,
-        exercises: mergedExercises,
-        cardio:    mergedCardio,
+        exercises: loggedExercises,
+        cardio:    loggedCardio,
         notes:     sessionNotes || existingData.notes,
-        volume:    Math.round(mergedVolume),
+        volume:    Math.round(totalVolume),
+        focus:     sessionFocus,
         period:    periodOn ?? existingData.period ?? null,
         warmup:    [...warmupChecked],
       });
       showToast("✅ Session updated!");
     } else {
-      // No existing session — create new
+      // No matching session — create a brand new record
       await addDoc(collection(db, "workouts"), {
         user:      currentUser,
-        day:       selectedDay        || "",
-        focus:     sessionFocus       || "",
-        exercises: loggedExercises    || [],
-        cardio:    loggedCardio       || [],
-        notes:     sessionNotes       || "",
-        volume:    Math.round(totalVolume) || 0,
-        period:    periodOn           ?? null,
-        warmup:    [...warmupChecked] || [],
+        day:       selectedDay,
+        focus:     sessionFocus,
+        exercises: loggedExercises,
+        cardio:    loggedCardio,
+        notes:     sessionNotes || "",
+        volume:    Math.round(totalVolume),
+        period:    periodOn ?? null,
+        warmup:    [...warmupChecked],
         timestamp: new Date().toISOString(),
-        date:      sessionDate        || "",
+        date:      sessionDate,
       });
       showToast("🎉 Workout saved!");
     }
+
     document.getElementById("session-notes").value = "";
     document.querySelectorAll(".set-complete-btn.done").forEach(b => b.classList.remove("done"));
     bwExercises.clear();
@@ -2007,26 +2000,41 @@ function updateHistStats(sessions) {
     return !GYM_DAYS.includes(dayName);
   }
 
-  // Walk backwards from today, skipping rest days
+  // Walk backwards from today counting the streak.
+  // Rules:
+  //   - Scheduled rest days (Wed/Sat) are skipped entirely
+  //   - ONE missed gym day in a row is allowed (rest day between workouts)
+  //   - TWO consecutive missed gym days = streak broken
   let streak = 0;
   let d = new Date();
   let checked = 0;
+  let missedInARow = 0;
+  const todayStr = new Date().toLocaleDateString("en-CA");
+
   while (checked < 365) {
     const dateStr = d.toLocaleDateString("en-CA");
+
     if (isRestDay(dateStr)) {
-      // Skip rest days — they don't count for or against the streak
+      // Scheduled rest day — skip, doesn't affect streak
       d.setDate(d.getDate() - 1);
       checked++;
       continue;
     }
+
     if (sessionDates.has(dateStr)) {
+      // Worked out — count it and reset missed counter
       streak++;
+      missedInARow = 0;
     } else {
-      // It's a gym day with no session — streak is broken
-      // But only break if this is in the past (not today, which might not be done yet)
-      const todayStr = new Date().toLocaleDateString("en-CA");
-      if (dateStr !== todayStr) break;
+      // Missed gym day
+      if (dateStr === todayStr) {
+        // Today not done yet — don't penalise
+      } else {
+        missedInARow++;
+        if (missedInARow > 1) break; // two missed gym days in a row = streak over
+      }
     }
+
     d.setDate(d.getDate() - 1);
     checked++;
   }
