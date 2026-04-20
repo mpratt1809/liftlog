@@ -605,6 +605,16 @@
 
 <div id="toast"></div>
 
+<!-- Early stubs: make onclick handlers work before the ES module finishes loading -->
+<script>
+  function selectUser(u)  { window._pendingUser = u; if (window._selectUser) window._selectUser(u); }
+  function switchUser()   { if (window._switchUser) window._switchUser(); }
+  function showTab(t)     { if (window._showTab) window._showTab(t); }
+  function toggleDeload() { if (window._toggleDeload) window._toggleDeload(); }
+  function confirmDeload(d){ if (window._confirmDeload) window._confirmDeload(d); }
+  function dismissDeload(){ if (window._dismissDeload) window._dismissDeload(); }
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, query, where, orderBy }
@@ -968,6 +978,12 @@ window.toggleBodyweight            = toggleBodyweight;
 window.toggleSetBW                 = toggleSetBW;
 window.saveDraft                   = saveDraft;
 window.moveExercise                = moveExercise;
+window._selectUser             = selectUser;
+window._switchUser             = switchUser;
+window._showTab                = showTab;
+window._toggleDeload           = toggleDeload;
+window._confirmDeload          = confirmDeload;
+window._dismissDeload          = dismissDeload;
 window.selectUser              = selectUser;
 window.switchUser              = switchUser;
 window.showTab                 = showTab;
@@ -978,6 +994,9 @@ window.saveWorkout             = saveWorkout;
 window.toggleDeload            = toggleDeload;
 window.confirmDeload           = confirmDeload;
 window.dismissDeload           = dismissDeload;
+
+// If user tapped a card before the module finished loading, handle it now
+if (window._pendingUser) { selectUser(window._pendingUser); window._pendingUser = null; }
 window.renderProgressionChart  = renderProgressionChart;
 window.onProgMuscleChange      = onProgMuscleChange;
 window.setProgRange            = setProgRange;
@@ -2309,7 +2328,6 @@ function updateHistStats(sessions) {
   }
 
   document.getElementById("stat-streak").textContent = streak+"🔥";
-  const todayStr = new Date().toLocaleDateString("en-CA");
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
   const weekStartStr = weekStart.toLocaleDateString("en-CA");
   document.getElementById("stat-this-week").textContent = sessions.filter(s=>s.date>=weekStartStr).length;
